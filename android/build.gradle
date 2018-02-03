@@ -1,0 +1,39 @@
+import com.android.build.gradle.BaseExtension
+
+buildscript {
+    repositories {
+        jcenter()
+        google()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.0.1'
+        classpath 'com.novoda:bintray-release:0.8.0'
+    }
+}
+
+allprojects {
+    repositories {
+        jcenter()
+        google()
+    }
+    afterEvaluate {
+        def android = project.extensions.findByName('android') as BaseExtension
+        android?.compileOptions {
+            sourceCompatibility JavaVersion.VERSION_1_8
+            targetCompatibility JavaVersion.VERSION_1_8
+        }
+    }
+}
+
+task javadoc(type: Javadoc) {
+    options.encoding = "utf-8"
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
+
+ext {
+    burstLinkerVer = '0.0.1'
+    libs = ['burstLinkerVer': "com.bilibili:$burstLinkerVer"]
+}

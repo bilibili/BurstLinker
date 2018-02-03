@@ -1,0 +1,4 @@
+/build
+.externalNativeBuild/
+/src/main/cpp/cmake-build-debug/
+/src/main/cpp/.idea/

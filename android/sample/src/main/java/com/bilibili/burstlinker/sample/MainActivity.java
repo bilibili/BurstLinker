@@ -1,0 +1,124 @@
+package com.bilibili.burstlinker.sample;
+
+import com.bilibili.burstlinker.BurstLinker;
+import com.bilibili.burstlinker.GifEncodeException;
+import com.bumptech.glide.Glide;
+
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.bilibili.burstlinker.BurstLinker.CPU_COUNT;
+
+/**
+ * Created by succlz123 on 2017/9/7.
+ */
+
+public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "gif";
+
+    private ImageView mDisplayImg;
+    private TextView mTimeTv;
+    private String mFilePath;
+    private String mText;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        mTimeTv = findViewById(R.id.time);
+        mDisplayImg = findViewById(R.id.display);
+        TextView textView = findViewById(R.id.text);
+
+        String dstFile = "result.gif";
+        mFilePath = getExternalCacheDir() + File.separator + dstFile;
+
+        textView.setOnClickListener(v -> new Thread(() -> {
+            encodeGIF();
+        }).start());
+    }
+
+    private void encodeGIF() {
+        Log.i(TAG, "Start");
+        long time = System.currentTimeMillis();
+        final Context context = MainActivity.this;
+
+        final Bitmap bitmap = loadBitmap(R.drawable.tcr);
+        int size = 0;
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        final int delayMs = 100;
+        final BurstLinker burstLinker = new BurstLinker();
+
+        Exception exception = null;
+        try {
+            burstLinker.init(width, height, mFilePath, 0, CPU_COUNT);
+            if (true) {
+                List<Bitmap> bitmaps = new ArrayList<>();
+                bitmaps.add(bitmap);
+                bitmaps.add(bitmap);
+                bitmaps.add(bitmap);
+                size = bitmaps.size();
+                burstLinker.connectArray(bitmaps, BurstLinker.OCTREE_QUANTIZER,
+                        BurstLinker.DISABLE_DITHER, 0, 0, delayMs);
+            } else {
+                Bitmap colorBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(colorBitmap);
+                Paint p = new Paint();
+                int[] colors = new int[]{0xFFF00000, 0xFFFFFF00, 0xFFFFFFFF};
+                for (int color : colors) {
+                    p.setColor(color);
+                    canvas.drawRect(0, 0, width, height, p);
+                    size++;
+                    burstLinker.connect(colorBitmap, BurstLinker.OCTREE_QUANTIZER,
+                            BurstLinker.DISABLE_DITHER, 0, 0, delayMs);
+                }
+            }
+        } catch (GifEncodeException e) {
+            e.printStackTrace();
+            exception = e;
+        } finally {
+            burstLinker.release();
+        }
+
+        final long diff = (System.currentTimeMillis() - time);
+        Log.i(TAG, "End " + diff);
+
+        if (exception != null) {
+            mText = exception.toString();
+            File file = new File(mFilePath);
+            if (file.exists()) {
+                file.delete();
+            }
+        } else {
+            mText = "width " + width + " height " + height + " size " + size + " time " + diff + "ms";
+            runOnUiThread(() -> {
+                Glide.with(context).load(mFilePath).into(mDisplayImg);
+            });
+        }
+        runOnUiThread(() -> {
+            mTimeTv.setText(mText);
+        });
+    }
+
+    /**
+     * it is recommended to use ARGB_8888
+     */
+    private Bitmap loadBitmap(int resource) {
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+        return BitmapFactory.decodeResource(getResources(), resource, options);
+    }
+}

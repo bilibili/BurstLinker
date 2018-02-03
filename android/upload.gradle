@@ -1,0 +1,8 @@
+publish {
+    userOrg = 'succlz123'
+    groupId = 'com.bilibili'
+    artifactId = 'burst-linker'
+    publishVersion = rootProject.ext.burstLinkerVer
+    desc = 'BurstLinker is a simple and fast C++ GIF encode library.'
+    website = 'https://github.com/Bilibili/BurstLinker'
+}
