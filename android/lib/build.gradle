@@ -15,9 +15,9 @@ android {
         versionName VERSION_NAME.toString()
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
-        // renderscriptTargetApi 26
-        // renderscriptSupportModeEnabled true
-        // renderscriptNdkModeEnabled true
+         renderscriptTargetApi 26
+         renderscriptSupportModeEnabled true
+         renderscriptNdkModeEnabled true
 
         externalNativeBuild {
             cmake {

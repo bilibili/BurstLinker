@@ -12,17 +12,17 @@ cmake_minimum_required(VERSION 3.4.1)
 
 # add_library(cpufeatures STATIC ${ANDROID_NDK}/sources/android/cpufeatures/cpu-features.c)
 
-# SET(RENDER_SCRIPT_HEADERS_PATH
-#    ${ANDROID_NDK}/toolchains/renderscript/prebuilt/${ANDROID_HOST_TAG}/platform/rs
-# )
+SET(RENDER_SCRIPT_HEADERS_PATH
+   ${ANDROID_NDK}/toolchains/renderscript/prebuilt/${ANDROID_HOST_TAG}/platform/rs
+)
 
-# INCLUDE_DIRECTORIES(
-#    ${RENDER_SCRIPT_HEADERS_PATH}/cpp
-#    ${RENDER_SCRIPT_HEADERS_PATH}/scriptc
-#    ${RENDER_SCRIPT_HEADERS_PATH}
-#    )
+INCLUDE_DIRECTORIES(
+    ${RENDER_SCRIPT_HEADERS_PATH}/cpp
+    ${RENDER_SCRIPT_HEADERS_PATH}/scriptc
+    ${RENDER_SCRIPT_HEADERS_PATH}
+    )
 
-# link_directories(${ANDROID_NDK}/toolchains/renderscript/prebuilt/${ANDROID_HOST_TAG}/platform/${ANDROID_SYSROOT_ABI})
+link_directories(${ANDROID_NDK}/toolchains/renderscript/prebuilt/${ANDROID_HOST_TAG}/platform/${ANDROID_SYSROOT_ABI})
 
 add_library( # Sets the name of the library.
              BurstLinker
@@ -58,9 +58,9 @@ add_library( # Sets the name of the library.
              # ../../src/GifAnalyzer.h
              ../../src/ThreadPool.h
 
-             # src/main/cpp/DithererWithRs.cpp
-             # src/main/cpp/DisableDithererWithRs.cpp
-             # src/main/cpp/BayerDithererWithRs.cpp
+             src/main/cpp/DithererWithRs.cpp
+             src/main/cpp/DisableDithererWithRs.cpp
+             src/main/cpp/BayerDithererWithRs.cpp
              # build/generated/source/rs/debug/ScriptC_linear.cpp
              )
 
@@ -88,14 +88,14 @@ target_link_libraries( # Specifies the target library.
                        # Links the target library to the log library
                        # included in the NDK.
                        ${log-lib}
-                       # RScpp_static
+                       RScpp_static
                        jnigraphics
                        )
 
 add_definitions (-Wno-format-security)
 add_definitions (-Wno-delete-non-virtual-dtor)
 
-# add_definitions (-D__Android__)
+add_definitions (-D__Android__)
 
-add_definitions (-D__AndroidLog__)
-add_definitions (-D__Other__)
+# add_definitions (-D__AndroidLog__)
+# add_definitions (-D__Other__)

@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
 
         Exception exception = null;
         try {
-            burstLinker.init(width, height, mFilePath, 0, CPU_COUNT);
+            burstLinker.init(width, height, mFilePath, 0, context);
             if (true) {
                 List<Bitmap> bitmaps = new ArrayList<>();
                 bitmaps.add(bitmap);
