@@ -7,15 +7,19 @@
 
 #include "Ditherer.h"
 
-class M2Ditherer : public Ditherer {
+namespace blk {
 
-public:
+    class M2Ditherer : public Ditherer {
 
-    void
-    dither(uint32_t *originalColors, int width, int height,
-           uint8_t *quantizerColors, int quantizerSize) override;
+    public:
 
-};
+        void
+        dither(RGB *originPixels, uint16_t width, uint16_t height,
+               RGB quantizerPixels[], int32_t quantizerSize,
+               uint8_t *colorIndices) override;
 
+    };
+
+}
 
 #endif //BURSTLINKER_M2DITHERER_H

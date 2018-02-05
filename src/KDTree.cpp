@@ -2,37 +2,30 @@
 // Created by succlz123 on 2017/12/28.
 //
 
-#include <stdlib.h>
-#include <math.h>
-#include <time.h>
-#include <iostream>
-#include <cassert>
 #include <algorithm>
 #include "KDTree.h"
 
 using namespace std;
+using namespace blk;
 
 // euclideanDistance
 // int distance = nr * nr + ng * ng + nb * nb;
 // manhattanDistance
 // int distance = abs(nr) + abs(ng) + abs(nb);
-static int calculateDist(KDTree::Node *node, const int *target) {
+int calculateDist(KDTree::Node *node, RGB target) {
     int tmp = 0;
-    for (int i = 0; i < 3; i++) {
-        int diff = node->data[i] - target[i];
-        if (i == 0) {
-            tmp += 2 * diff * diff;
-        } else if (i == 1) {
-            tmp += 4 * diff * diff;
-        } else {
-            tmp += 3 * diff * diff;
-        }
-    }
+    int diff = node->r - target.r;
+    tmp += (diff * diff) << 1;
+    diff = node->g - target.g;
+    tmp += (diff * diff) << 2;
+    diff = node->b - target.b;
+    tmp += (diff * diff) * 3;
     return tmp;
 }
 
-static int getDimension(int *data[], int dataSize) {
-    if (dataSize == 0) {
+uint8_t getDimension(RGB rgb[], int start, int end) {
+    int dataSize = end - start + 1;
+    if (dataSize <= 0) {
         return 0;
     }
     int sumR = 0;
@@ -40,13 +33,9 @@ static int getDimension(int *data[], int dataSize) {
     int sumB = 0;
 
     for (int i = 0; i < dataSize; ++i) {
-        auto color = data[i];
-        int qr = color[0];
-        int qg = color[1];
-        int qb = color[2];
-        sumR += qr;
-        sumG += qg;
-        sumB += qb;
+        sumR += rgb[i].r;
+        sumG += rgb[i].g;
+        sumB += rgb[i].b;
     }
 
     int rAve = sumR / dataSize;
@@ -54,10 +43,10 @@ static int getDimension(int *data[], int dataSize) {
     int bAve = sumB / dataSize;
 
     for (int i = 0; i < dataSize; ++i) {
-        auto color = data[i];
-        int qr = color[0];
-        int qg = color[1];
-        int qb = color[2];
+        auto color = rgb[i];
+        int qr = color.r;
+        int qg = color.g;
+        int qb = color.b;
         sumR += (qr - rAve) * (qr - rAve);
         sumG += (qg - gAve) * (qg - gAve);
         sumB += (qb - bAve) * (qb - bAve);
@@ -68,69 +57,63 @@ static int getDimension(int *data[], int dataSize) {
     bAve = sumB / dataSize;
 
     int maxVariance = rAve;
+    uint8_t dimension = 0;
     if (gAve > maxVariance) {
         maxVariance = gAve;
+        dimension = 1;
     }
     if (bAve > maxVariance) {
-        maxVariance = bAve;
-    }
-
-    int dimension = 0;
-    if (maxVariance == rAve) {
-        dimension = 0;
-    } else if (maxVariance == gAve) {
-        dimension = 1;
-    } else if (maxVariance == bAve) {
         dimension = 2;
     }
     return dimension;
 }
 
-KDTree::Node *KDTree::createKDTree(int **data, int size, int split) {
-    if (size == 0) {
+void *KDTree::createKDTree(Node *node, RGB rgb[], int32_t start, int32_t end, uint8_t split) {
+    int size = end - start + 1;
+    if (size <= 0) {
         return nullptr;
     }
 
-    auto *node = new Node;
-
     if (size == 1) {
-        node->data = data[0];
+        node->r = rgb[start].r;
+        node->g = rgb[start].g;
+        node->b = rgb[start].b;
+        node->index = rgb[start].index;
         node->split = split;
         node->left = nullptr;
         node->right = nullptr;
         return node;
     }
 
-    sort(data, data + size, Compare(split));
+    sort(rgb + start, rgb + end, Compare(split));
 
     int splitSize = size / 2;
+    int leftStart = start;
+    int leftEnd = start + splitSize - 1;
+    int rightStart = leftEnd + 2;
+    int rightEnd = end;
+    int current = start + splitSize;
 
-    auto **leftData = new int *[splitSize];
-    auto **rightData = new int *[splitSize];
-
-    node->data = data[splitSize];
+    node->r = rgb[current].r;
+    node->g = rgb[current].g;
+    node->b = rgb[current].b;
+    node->index = rgb[current].index;
     node->split = split;
 
-    int leftIndex = 0;
-    int rightIndex = 0;
-    for (int i = 0; i < size; ++i) {
-        if (i < splitSize) {
-            leftData[leftIndex++] = data[i];
-        } else if (i > splitSize) {
-            rightData[rightIndex++] = data[i];
-        }
-    }
-
     // (split + 1) % 3
-    int leftSplit = getDimension(leftData, leftIndex);
-    int rightSplit = getDimension(rightData, rightIndex);
+    uint8_t leftSplit = getDimension(rgb, leftStart, leftEnd);
+    uint8_t rightSplit = getDimension(rgb, rightStart, rightEnd);
 
-    node->left = createKDTree(leftData, leftIndex, leftSplit);
-    node->right = createKDTree(rightData, rightIndex, rightSplit);
+    auto *leftNode = new Node();
+    auto *rightNode = new Node();
+    node->left = leftNode;
+    node->right = rightNode;
+    createKDTree(leftNode, rgb, leftStart, leftEnd, leftSplit);
+    createKDTree(rightNode, rgb, rightStart, rightEnd, rightSplit);
     return node;
 }
 
-int KDTree::searchNN(KDTree::Node *node, int *target, int dis) {
+int KDTree::searchNNNoBacktracking(KDTree::Node *node, RGB target, int32_t dis) {
     if (node == nullptr) {
         return dis;
     }
@@ -141,15 +124,29 @@ int KDTree::searchNN(KDTree::Node *node, int *target, int dis) {
             return dis;
         }
     }
-    if (target[node->split] <= node->data[node->split]) {
-        dis = searchNN(node->left, target, dis);
+    bool comp = false;
+    switch (node->split) {
+        case 0:
+            comp = node->r <= target.r;
+            break;
+        case 1:
+            comp = node->g <= target.g;
+            break;
+        case 2:
+            comp = node->b <= target.b;
+            break;
+        default:
+            break;
+    }
+    if (comp) {
+        dis = searchNNNoBacktracking(node->left, target, dis);
         int tmp = calculateDist(node, target);
         if (tmp < dis || dis == -1) {
             nearest = *node;
             dis = tmp;
         }
     } else {
-        dis = searchNN(node->right, target, dis);
+        dis = searchNNNoBacktracking(node->right, target, dis);
         int tmp = calculateDist(node, target);
         if (tmp < dis || dis == -1) {
             nearest = *node;
@@ -165,8 +162,6 @@ void KDTree::freeKDTree(KDTree::Node *tree) {
     }
     freeKDTree(tree->left);
     freeKDTree(tree->right);
-    tree->split = 0;
-    delete[] tree->data;
-    tree->data = nullptr;
-    delete tree;
+    delete tree->left;
+    delete tree->right;
 }

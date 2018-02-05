@@ -1,8 +1,10 @@
 apply plugin: 'com.android.application'
 
+def libVersion = rootProject.ext.burstLinkerVer
+
 android {
     compileSdkVersion 27
-    buildToolsVersion '26.0.2'
+    buildToolsVersion '27.0.3'
 
     defaultConfig {
         applicationId "com.bilibili.burstlinker.sample"
@@ -35,4 +37,5 @@ dependencies {
     implementation 'com.github.bumptech.glide:glide:4.4.0'
     annotationProcessor 'com.github.bumptech.glide:compiler:4.4.0'
     implementation project(path: ':lib')
+//    implementation "com.bilibili:burst-linker:$libVersion"
 }

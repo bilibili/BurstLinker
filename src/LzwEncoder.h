@@ -10,36 +10,35 @@
 #include <list>
 #include <vector>
 
-using namespace std;
+namespace blk {
 
-class LzwEncoder {
+    class LzwEncoder {
 
-public:
+    public:
 
-    explicit LzwEncoder(int paddedColorCount);
+        explicit LzwEncoder(int32_t paddedColorCount);
 
-    ~LzwEncoder();
+        ~LzwEncoder();
 
-    void encode(uint32_t indices[], int width, int height, int size, char out[], vector<uint8_t> &content);
+        void encode(uint8_t indices[], uint16_t width, uint16_t height, std::vector<uint8_t> &content);
 
-private:
+    private:
 
-    static const int32_t BLOCK_SIZE = 255;
+        std::list<uint8_t *> datas;
 
-    list<uint8_t *> datas;
+        uint8_t *current;
 
-    uint8_t *current;
+        int pos;
 
-    int pos;
+        int remain;
 
-    int remain;
+        int32_t numColors;
 
-    uint8_t numColors;
+        void writeBits(uint32_t src, int32_t bit);
 
-    void writeBits(uint32_t src, int32_t bit);
+        int write(std::vector<uint8_t> &content, uint8_t minimumCodeSize);
+    };
 
-    int write(vector<uint8_t> &content, uint8_t minimumCodeSize);
-};
-
+}
 
 #endif //BURSTLINKER_LZWENCODER_H

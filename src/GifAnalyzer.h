@@ -5,14 +5,16 @@
 #ifndef BURSTLINKER_GIFANALYZER_H
 #define BURSTLINKER_GIFANALYZER_H
 
+namespace blk {
 
-class GifAnalyzer {
+    class GifAnalyzer {
 
-public:
+    public:
 
-    void showGifInfo(const char *path);
+        void showGifInfo(const char *path);
 
-};
+    };
 
+}
 
 #endif //BURSTLINKER_GIFANALYZER_H

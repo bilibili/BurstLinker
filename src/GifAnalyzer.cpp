@@ -6,18 +6,19 @@
 #include <cstdlib>
 #include <cstring>
 #include "GifAnalyzer.h"
-#include "GifLogger.h"
+#include "Logger.h"
 
 using namespace std;
+using namespace blk;
 
-const size_t BUF_SIZE = 1024;
+static const size_t BUF_SIZE = 1024;
 
-void analyzeError() {
+static void analyzeError() {
     fprintf(stderr, "Parse failed\n");
     exit(1);
 }
 
-void readNbytes(FILE *file, uint8_t *buf, size_t nbytes) {
+static void readNbytes(FILE *file, uint8_t *buf, size_t nbytes) {
     size_t retCode = fread(buf, 1, nbytes, file);
     if (retCode == nbytes) {
         buf[nbytes] = 0;
@@ -26,7 +27,7 @@ void readNbytes(FILE *file, uint8_t *buf, size_t nbytes) {
     }
 }
 
-void analyzeColorTable(FILE *file, unsigned table_size) {
+static void analyzeColorTable(FILE *file, unsigned table_size) {
     uint8_t buf[BUF_SIZE] = {0};
     printf("%8s%8s%8s%8s\n", "INDEX", "RED", "GREEN", "BLUE");
     printf("--------------------------------\n");
@@ -36,7 +37,7 @@ void analyzeColorTable(FILE *file, unsigned table_size) {
     }
 }
 
-unsigned analyzeDataBlock(FILE *file) {
+static unsigned analyzeDataBlock(FILE *file) {
     unsigned totalSize = 0;
     uint8_t buf[BUF_SIZE] = {0};
     for (;;) {
@@ -55,7 +56,7 @@ unsigned analyzeDataBlock(FILE *file) {
     return totalSize;
 }
 
-void analyzeApplicationExtension(FILE *file) {
+static void analyzeApplicationExtension(FILE *file) {
     uint8_t buf[BUF_SIZE] = {0};
 
     readNbytes(file, buf, 1);
@@ -91,7 +92,7 @@ void analyzeApplicationExtension(FILE *file) {
     analyzeDataBlock(file);
 }
 
-void analyzeGraphicControlExtension(FILE *file) {
+static void analyzeGraphicControlExtension(FILE *file) {
     uint8_t buf[BUF_SIZE] = {0};
 
     readNbytes(file, buf, 1);
@@ -119,11 +120,11 @@ void analyzeGraphicControlExtension(FILE *file) {
     analyzeDataBlock(file);
 }
 
-void analyzeCommentExtension(FILE *file) {
+static void analyzeCommentExtension(FILE *file) {
     analyzeDataBlock(file);
 }
 
-void analyzeImage(FILE *file, unsigned rawImageWidth, unsigned rawImageHeight) {
+static void analyzeImage(FILE *file, unsigned rawImageWidth, unsigned rawImageHeight) {
     uint8_t buf[BUF_SIZE] = {0};
 
     readNbytes(file, buf, 2);
@@ -172,7 +173,7 @@ void analyzeImage(FILE *file, unsigned rawImageWidth, unsigned rawImageHeight) {
            (float) rawSizeImageDataLength / compressedImageDataLength);
 }
 
-void analyzeGif(FILE *file) {
+static void analyzeGif(FILE *file) {
     uint8_t buf[BUF_SIZE] = {0};
 
     // fixed-length header
@@ -293,7 +294,7 @@ void analyzeGif(FILE *file) {
 void GifAnalyzer::showGifInfo(const char *path) {
     FILE *file = fopen(path, "rb");
     if (!file) {
-        GifLogger::log(true, "GifAnalyzer : Could not open the file");
+        Logger::log(true, "GifAnalyzer : Could not open the file");
         exit(1);
     }
     analyzeGif(file);

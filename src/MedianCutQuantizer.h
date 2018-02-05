@@ -5,25 +5,18 @@
 #ifndef BURSTLINKER_MEDIANCUTQUANTIZER_H
 #define BURSTLINKER_MEDIANCUTQUANTIZER_H
 
-
 #include "ColorQuantizer.h"
-#include "GifEncoder.h"
-#include <cmath>
-#include <algorithm>
-#include <utility>
-#include <iostream>
-#include <queue>
 
-class MedianCutQuantizer : public ColorQuantizer {
+namespace blk {
 
+    class MedianCutQuantizer : public ColorQuantizer {
 
-public:
+    public:
 
-    ~MedianCutQuantizer() override;
+        int32_t quantize(RGB *pixels, uint32_t pixelCount, uint32_t maxColorCount, RGB out[]) override;
 
-    int32_t quantize(uint32_t *originalColors, uint32_t pixelCount, uint32_t maxColorCount) override;
+    };
 
-
-};
+}
 
 #endif //BURSTLINKER_MEDIANCUTQUANTIZER_H

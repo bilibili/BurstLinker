@@ -3,7 +3,7 @@
 //
 
 #include "DisableDithererWithRs.h"
-#include "../../../../../src/GifLogger.h"
+#include "../../../../../src/Logger.h"
 #include "../../../../../src/BayerDitherer.h"
 #include "../../../build/generated/source/rs/debug/ScriptC_linear.h"
 

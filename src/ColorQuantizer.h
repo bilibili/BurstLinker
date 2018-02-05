@@ -7,32 +7,27 @@
 
 #include <set>
 #include <cstdint>
+#include "GifEncoder.h"
 
-using namespace std;
+namespace blk {
 
-class ColorQuantizer {
+    class ColorQuantizer {
 
-public:
+    public:
 
-    int width = 0;
+        int32_t resultSize = 0;
 
-    int height = 0;
+        virtual ~ColorQuantizer() = default;;
 
-    virtual ~ColorQuantizer();
+        virtual int32_t
+        quantize(RGB *pixels, uint32_t pixelCount, uint32_t maxColorCount, RGB out[])= 0;
 
-    virtual int32_t
-    quantize(uint32_t *originalColors, uint32_t pixelCount, uint32_t maxColorCount)= 0;
+    protected:
 
-    void getColorPalette(uint8_t out[]);
+        int sample = 10; // for NeuQuant
 
-protected:
+    };
 
-    int resultSize = 0;
-
-    int sample = 10; // for NeuQuant
-
-    uint8_t colorPalette[256 * 3]{'\0'};
-};
-
+}
 
 #endif //BURSTLINKER_COLORQUANTIZER_H

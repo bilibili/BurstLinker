@@ -7,49 +7,52 @@
 
 #include "ColorQuantizer.h"
 
-class OctreeQuantizer : public ColorQuantizer {
+namespace blk {
 
-protected:
+    class OctreeQuantizer : public ColorQuantizer {
 
-    typedef struct Node {
-        bool isLeaf;
-        uint8_t colorIndex;
-        uint32_t pixelCount;
-        uint32_t rSum;
-        uint32_t gSum;
-        uint32_t bSum;
-        Node *child[8];
-        Node *next;
-    } Node;
+    protected:
 
-public:
+        typedef struct Node {
+            bool isLeaf;
+            uint8_t colorIndex;
+            uint32_t pixelCount;
+            uint32_t rSum;
+            uint32_t gSum;
+            uint32_t bSum;
+            Node *child[8];
+            Node *next;
+        } Node;
 
-    ~OctreeQuantizer() override;
+    public:
 
-    int32_t quantize(uint32_t *originalColors, uint32_t pixelCount, uint32_t maxColorCount) override;
+        ~OctreeQuantizer() override;
 
-    int32_t getColorIndex(uint8_t r, uint8_t g, uint8_t b) const;
+        int32_t quantize(RGB *pixels, uint32_t pixelCount, uint32_t maxColorCount, RGB out[]) override;
 
-    void getColorIndices(uint32_t *originalColors, uint32_t *out, int size, int (*getOffset)(int, int));
+        int32_t getColorIndex(uint8_t r, uint8_t g, uint8_t b) const;
 
-    void freeTree(Node *&tree);
+        void getColorIndices(RGB pixels[], uint8_t *out, uint32_t size, int (*getOffset)(int, int));
 
-protected:
+        void freeTree(Node *&tree);
 
-    bool addColor(Node *&node, uint32_t r, uint32_t g, uint32_t b, int level);
+    protected:
 
-    Node *createNode(int inLevel);
+        bool addColor(Node *node, uint32_t r, uint32_t g, uint32_t b, int level);
 
-    void reduceTree();
+        Node *createNode(int inLevel);
 
-    void getColorPalette(Node *tree, int &inIndex);
+        void reduceTree();
 
-	size_t leafCount = 0;
+        void getColorPalette(Node *tree, int32_t &inIndex, RGB out[]);
 
-    Node *octree;
+        size_t leafCount = 0;
 
-    Node *nodeList[8];
-};
+        Node *octree{};
 
+        Node *nodeList[8]{};
+    };
+
+}
 
 #endif //BURSTLINKER_OCTREEQUANTIZER_H

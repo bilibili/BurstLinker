@@ -5,16 +5,18 @@
 #ifndef BURSTLINKER_KMEANSQUANTIZER_H
 #define BURSTLINKER_KMEANSQUANTIZER_H
 
-
 #include "ColorQuantizer.h"
 
-class KMeansQuantizer : public ColorQuantizer {
+namespace blk {
 
-public:
+    class KMeansQuantizer : public ColorQuantizer {
 
-    int32_t quantize(uint32_t *originalColors, uint32_t pixelCount, uint32_t maxColorCount) override;
+    public:
 
-};
+        int32_t quantize(RGB *pixels, uint32_t pixelCount, uint32_t maxColorCount, RGB out[]) override;
 
+    };
+
+}
 
 #endif //BURSTLINKER_KMEANSQUANTIZER_H

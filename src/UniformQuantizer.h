@@ -5,15 +5,17 @@
 #ifndef BURSTLINKER_UNIFORMQUANTIZER_H
 #define BURSTLINKER_UNIFORMQUANTIZER_H
 
-
 #include "ColorQuantizer.h"
 
-class UniformQuantizer : public ColorQuantizer {
+namespace blk {
 
-public:
+    class UniformQuantizer : public ColorQuantizer {
 
-    int quantize(uint32_t *originalColors, uint32_t pixelCount, uint32_t maxColorCount) override;
-};
+    public:
 
+        int32_t quantize(RGB *pixels, uint32_t pixelCount, uint32_t maxColorCount, RGB out[]) override;
+    };
+
+}
 
 #endif //BURSTLINKER_UNIFORMQUANTIZER_H

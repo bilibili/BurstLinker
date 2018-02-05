@@ -6,7 +6,7 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.0.1'
+        classpath 'com.android.tools.build:gradle:3.1.4'
         classpath 'com.novoda:bintray-release:0.8.0'
     }
 }
@@ -23,10 +23,10 @@ allprojects {
             targetCompatibility JavaVersion.VERSION_1_8
         }
     }
-}
-
-task javadoc(type: Javadoc) {
-    options.encoding = "utf-8"
+    tasks.withType(Javadoc) {
+        options.addStringOption('Xdoclint:none', '-quiet')
+        options.addStringOption('encoding', 'UTF-8')
+    }
 }
 
 task clean(type: Delete) {
@@ -34,6 +34,6 @@ task clean(type: Delete) {
 }
 
 ext {
-    burstLinkerVer = '0.0.1'
+    burstLinkerVer = '0.0.9'
     libs = ['burstLinkerVer': "com.bilibili:$burstLinkerVer"]
 }

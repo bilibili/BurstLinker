@@ -16,8 +16,9 @@ class BayerDithererWithRs : public DithererWithRs {
 
 public:
 
-    void dither(uint32_t *originalColors, int width, int height, unsigned char *quantizerColors,
-                int quantizerSize, sp<RS> rs) override;
+    void dither(blk::RGB *originPixels, uint16_t width, uint16_t height,
+                blk::RGB quantizerPixels[], int32_t quantizerSize,
+                uint8_t *colorIndices, sp<RS> rs) override;
 
 };
 

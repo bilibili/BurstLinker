@@ -3,109 +3,92 @@
 //
 
 #include <cstdint>
-#include <cmath>
-#include <map>
 #include "FloydSteinbergDitherer.h"
 #include "KDTree.h"
 
 using namespace std;
+using namespace blk;
 
 static const int8_t ERROR_COMPONENT_SIZE = 4;
 static const float ERROR_COMPONENT_DELTA_X[] = {1.0f, -1.0f, 0.0f, 1.0f};
 static const float ERROR_COMPONENT_DELTA_Y[] = {0.0f, 1.0f, 1.0f, 1.0f};
 static const float ERROR_COMPONENT_FACTION[] = {7.0f / 16.0f, 3.0f / 16.0f, 5.0f / 16.0f, 1.0f / 16.0f};
 
-void FloydSteinbergDitherer::dither(uint32_t *originalColors, int width, int height, uint8_t *quantizerColors,
-                                    int quantizerSize) {
+void FloydSteinbergDitherer::dither(RGB *originPixels, uint16_t width, uint16_t height,
+                                    RGB quantizerPixels[], int32_t quantizerSize,
+                                    uint8_t *colorIndices) {
     int32_t totalSize = width * height;
-    colorIndices = new uint32_t[totalSize];
-
-    map<uint32_t, uint32_t> colorTable;
-
-    auto **datas = new int *[quantizerSize];
-    for (int k = 0; k < quantizerSize * 3; k = k + 3) {
-        int qr = quantizerColors[k] & 0xFF;
-        int qg = quantizerColors[k + 1] & 0xFF;
-        int qb = quantizerColors[k + 2] & 0xFF;
-        int index = k / 3;
-        auto *data = new int[4]{qr, qg, qb, index};
-        datas[index] = data;
-        colorTable.insert(pair<uint32_t, uint32_t>(qr << 16 | qg << 8 | qb, index));
-    }
-
-    auto *kdTree = new KDTree();
-    KDTree::Node *tree = kdTree->createKDTree(datas, quantizerSize, 0);
-    int target[3];
-    int nearestCentroidR = 0;
-    int nearestCentroidG = 0;
-    int nearestCentroidB = 0;
-    int lastR = 256;
-    int lastG = 256;
-    int lastB = 256;
+    KDTree kdTree;
+    KDTree::Node rootNode;
+    kdTree.createKDTree(&rootNode, quantizerPixels, 0, quantizerSize - 1, 0);
+    RGB target;
+    uint8_t nearestCentroidR = 0;
+    uint8_t nearestCentroidG = 0;
+    uint8_t nearestCentroidB = 0;
+    uint16_t lastR = 256;
+    uint16_t lastG = 256;
+    uint16_t lastB = 256;
+    uint8_t r = 0;
+    uint8_t g = 0;
+    uint8_t b = 0;
+    int position = 0;
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
-            int position = y * width + x;
-            uint32_t rgb = originalColors[position];
-
-            int b = (rgb >> 16) & 0xFF;
-            int g = (rgb >> 8) & 0xFF;
-            int r = (rgb) & 0xFF;
-
+            auto rgb = originPixels[position];
+            r = rgb.r;
+            g = rgb.g;
+            b = rgb.b;
             if (!(lastR == r && lastG == g && lastB == b)) {
                 lastR = r;
                 lastG = g;
                 lastB = b;
-                target[0] = r;
-                target[1] = g;
-                target[2] = b;
-                kdTree->searchNN(tree, target, -1);
+                target.r = r;
+                target.g = g;
+                target.b = b;
+                kdTree.searchNNNoBacktracking(&rootNode, target, -1);
             }
 
-            nearestCentroidR = kdTree->nearest.data[0];
-            nearestCentroidG = kdTree->nearest.data[1];
-            nearestCentroidB = kdTree->nearest.data[2];
+            nearestCentroidR = kdTree.nearest.r;
+            nearestCentroidG = kdTree.nearest.g;
+            nearestCentroidB = kdTree.nearest.b;
 
-            originalColors[position] = nearestCentroidR << 16 | nearestCentroidG << 8 | nearestCentroidB;
+            originPixels[position].r = nearestCentroidR;
+            originPixels[position].g = nearestCentroidG;
+            originPixels[position].b = nearestCentroidB;
 
-            int errorR = (r - nearestCentroidR);
-            int errorG = (g - nearestCentroidG);
-            int errorB = (b - nearestCentroidB);
+            position++;
+
+            int8_t errorR = (r - nearestCentroidR);
+            int8_t errorG = (g - nearestCentroidG);
+            int8_t errorB = (b - nearestCentroidB);
 
             for (int directionId = 0; directionId < ERROR_COMPONENT_SIZE; ++directionId) {
-                auto siblingX = static_cast<int>(x + ERROR_COMPONENT_DELTA_X[directionId]);
-                auto siblingY = static_cast<int>(y + ERROR_COMPONENT_DELTA_Y[directionId]);
+                auto siblingX = static_cast<int32_t>(x + ERROR_COMPONENT_DELTA_X[directionId]);
+                auto siblingY = static_cast<int32_t>(y + ERROR_COMPONENT_DELTA_Y[directionId]);
 
                 if (siblingX >= 0 && siblingY >= 0 && siblingX < width && siblingY < height) {
-
                     float errorComponentR = errorR * ERROR_COMPONENT_FACTION[directionId];
                     float errorComponentG = errorG * ERROR_COMPONENT_FACTION[directionId];
                     float errorComponentB = errorB * ERROR_COMPONENT_FACTION[directionId];
 
                     int ditherPosition = siblingY * width + siblingX;
-                    int siblingRgb = originalColors[ditherPosition];
+                    auto siblingRgb = originPixels[ditherPosition];
 
-                    auto siblingR = static_cast<int>((siblingRgb >> 16 & 0xFF) + errorComponentR);
-                    auto siblingG = static_cast<int>((siblingRgb >> 8 & 0xFF) + errorComponentG);
-                    auto siblingB = static_cast<int>((siblingRgb & 0xFF) + errorComponentB);
+                    auto siblingR = static_cast<int32_t >(siblingRgb.r + errorComponentR);
+                    auto siblingG = static_cast<int32_t>(siblingRgb.g + errorComponentG);
+                    auto siblingB = static_cast<int32_t>(siblingRgb.b + errorComponentB);
 
-                    originalColors[ditherPosition] = (min(255, max(0, siblingR))) << 16
-                                                     | (min(255, max(0, siblingG))) << 8
-                                                     | (min(255, max(0, siblingB)));
+                    originPixels[ditherPosition].r = static_cast<uint8_t>(min(255, max(0, siblingR)));
+                    originPixels[ditherPosition].g = static_cast<uint8_t>(min(255, max(0, siblingG)));
+                    originPixels[ditherPosition].b = static_cast<uint8_t>(min(255, max(0, siblingB)));
                 }
             }
         }
     }
-
-    int lastPixel = -1;
-    uint32_t lastColorIndices = 0;
     for (int i = 0; i < totalSize; ++i) {
-        const uint32_t pixel = originalColors[i];
-        if (pixel != lastPixel) {
-            lastColorIndices = colorTable.find(pixel)->second;
-        }
-        colorIndices[i] = lastColorIndices;
+        auto rgb = originPixels[i];
+        kdTree.searchNNNoBacktracking(&rootNode, rgb, -1);
+        colorIndices[i] = kdTree.nearest.index;
     }
-    kdTree->freeKDTree(tree);
-    delete[] datas;
-    delete kdTree;
+    kdTree.freeKDTree(&rootNode);
 }

@@ -7,45 +7,33 @@
 
 #include <cstdint>
 #include "ColorQuantizer.h"
-#include "GifEncoder.h"
 
-#if defined(__Android__)
+namespace blk {
 
-#include <RenderScript.h>
+    class Ditherer {
 
-using namespace android::RSC;
-#endif
+    public:
 
-class Ditherer {
-
-public:
-
-    // ffmpeg vf_paletteuse.c
-    static int bayerDitherValue(int p) {
-        const int q = p ^(p >> 3);
-        return (p & 4) >> 2 | (q & 4) >> 1 \
+        // ffmpeg vf_paletteuse.c
+        static int bayerDitherValue(int p) {
+            const int q = p ^(p >> 3);
+            return (p & 4) >> 2 | (q & 4) >> 1 \
  | (p & 2) << 1 | (q & 2) << 2 \
  | (p & 1) << 4 | (q & 1) << 5;
-    }
+        }
 
-    // only for bayer
-    int bayerScale = 1;
+        // only for bayer
+        int bayerScale = 1;
 
-    virtual ~Ditherer();
+        virtual ~Ditherer() = default;
 
-    uint32_t *colorIndices = nullptr;
+        virtual void
+        dither(RGB *originPixels, uint16_t width, uint16_t height,
+               RGB quantizerPixels[], int32_t quantizerSize,
+               uint8_t *colorIndices) = 0;
 
-    ColorQuantizer *colorQuantizer;
+    };
 
-    QuantizerType quantizerType;
-
-    void getColorIndices(uint32_t *out, int32_t size);
-
-    virtual void
-    dither(uint32_t *originalColors, int width, int height,
-           uint8_t *quantizerColors, int quantizerSize) = 0;
-
-};
-
+}
 
 #endif //BURSTLINKER_DITHERER_H

@@ -5,36 +5,38 @@
 #ifndef BURSTLINKER_BURSTLINKER_H
 #define BURSTLINKER_BURSTLINKER_H
 
-
 #include <cstdint>
 #include "GifEncoder.h"
 
-class BurstLinker {
+namespace blk {
 
-public:
+    class BurstLinker {
 
-    ~BurstLinker();
+    public:
 
-    bool init(const char *path, uint16_t width, uint16_t height, uint32_t loopCount,
-              uint32_t threadNum);
+        ~BurstLinker();
 
-    bool connect(uint32_t *imagePixels, uint32_t delay,
-                 QuantizerType quantizerType, DitherType ditherType,
-                 float scale, uint16_t left, uint16_t top);
+        bool init(const char *path, uint16_t width, uint16_t height, uint32_t loopCount,
+                  uint32_t threadNum);
 
-    bool connect(vector<uint32_t *> imagePixels, uint32_t delay,
-                 QuantizerType quantizerType, DitherType ditherType,
-                 float scale, uint16_t left, uint16_t top);
+        bool connect(uint32_t *imagePixels, uint32_t delay,
+                     QuantizerType quantizerType, DitherType ditherType,
+                     uint16_t left, uint16_t top);
 
-    void release();
+        bool connect(std::vector<uint32_t *> imagePixels, uint32_t delay,
+                     QuantizerType quantizerType, DitherType ditherType,
+                     uint16_t left, uint16_t top);
 
-    void analyzerGifInfo(const char *path);
+        void release();
 
-private:
+        void analyzerGifInfo(const char *path);
 
-    GifEncoder *gifEncoder = nullptr;
+    private:
 
-};
+        GifEncoder *gifEncoder = nullptr;
 
+    };
+
+}
 
 #endif //BURSTLINKER_BURSTLINKER_H

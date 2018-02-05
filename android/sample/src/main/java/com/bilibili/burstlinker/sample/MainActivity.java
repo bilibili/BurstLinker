@@ -1,9 +1,5 @@
 package com.bilibili.burstlinker.sample;
 
-import com.bilibili.burstlinker.BurstLinker;
-import com.bilibili.burstlinker.GifEncodeException;
-import com.bumptech.glide.Glide;
-
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -15,6 +11,10 @@ import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bilibili.burstlinker.BurstLinker;
+import com.bilibili.burstlinker.GifEncodeException;
+import com.bumptech.glide.Glide;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,12 +24,12 @@ import static com.bilibili.burstlinker.BurstLinker.CPU_COUNT;
 /**
  * Created by succlz123 on 2017/9/7.
  */
-
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "gif";
 
     private ImageView mDisplayImg;
     private TextView mTimeTv;
+    private TextView mEncodeTv;
     private String mFilePath;
     private String mText;
 
@@ -40,14 +40,15 @@ public class MainActivity extends AppCompatActivity {
 
         mTimeTv = findViewById(R.id.time);
         mDisplayImg = findViewById(R.id.display);
-        TextView textView = findViewById(R.id.text);
+        mEncodeTv = findViewById(R.id.text);
 
         String dstFile = "result.gif";
-        mFilePath = getExternalCacheDir() + File.separator + dstFile;
+        mFilePath = getCacheDir() + File.separator + dstFile;
 
-        textView.setOnClickListener(v -> new Thread(() -> {
-            encodeGIF();
-        }).start());
+        mEncodeTv.setOnClickListener(v -> {
+            mEncodeTv.setEnabled(false);
+            new Thread(this::encodeGIF).start();
+        });
     }
 
     private void encodeGIF() {
@@ -59,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
         int size = 0;
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
-        final int delayMs = 100;
+        final int delayMs = 1000;
         final BurstLinker burstLinker = new BurstLinker();
 
         Exception exception = null;
@@ -72,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
                 bitmaps.add(bitmap);
                 size = bitmaps.size();
                 burstLinker.connectArray(bitmaps, BurstLinker.OCTREE_QUANTIZER,
-                        BurstLinker.DISABLE_DITHER, 0, 0, delayMs);
+                        BurstLinker.NO_DITHER, 0, 0, delayMs);
             } else {
                 Bitmap colorBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
                 Canvas canvas = new Canvas(colorBitmap);
@@ -83,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
                     canvas.drawRect(0, 0, width, height, p);
                     size++;
                     burstLinker.connect(colorBitmap, BurstLinker.OCTREE_QUANTIZER,
-                            BurstLinker.DISABLE_DITHER, 0, 0, delayMs);
+                            BurstLinker.NO_DITHER, 0, 0, delayMs);
                 }
             }
         } catch (GifEncodeException e) {
@@ -104,12 +105,11 @@ public class MainActivity extends AppCompatActivity {
             }
         } else {
             mText = "width " + width + " height " + height + " size " + size + " time " + diff + "ms";
-            runOnUiThread(() -> {
-                Glide.with(context).load(mFilePath).into(mDisplayImg);
-            });
+            runOnUiThread(() -> Glide.with(context).load(mFilePath).into(mDisplayImg));
         }
         runOnUiThread(() -> {
             mTimeTv.setText(mText);
+            mEncodeTv.setEnabled(true);
         });
     }
 

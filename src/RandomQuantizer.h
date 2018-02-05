@@ -5,16 +5,18 @@
 #ifndef BURSTLINKER_RANDOMQUANTIZER_H
 #define BURSTLINKER_RANDOMQUANTIZER_H
 
-
 #include "ColorQuantizer.h"
 
-class RandomQuantizer : public ColorQuantizer {
+namespace blk {
 
-public:
+    class RandomQuantizer : public ColorQuantizer {
 
-    int32_t quantize(uint32_t *originalColors, uint32_t pixelCount, uint32_t maxColorCount) override;
+    public:
 
-};
+        int32_t quantize(RGB *pixels, uint32_t pixelCount, uint32_t maxColorCount, RGB out[]) override;
 
+    };
+
+}
 
 #endif //BURSTLINKER_RANDOMQUANTIZER_H

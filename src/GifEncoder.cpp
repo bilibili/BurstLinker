@@ -4,9 +4,10 @@
 
 #include <cstdint>
 #include <fstream>
+#include <iostream>
 #include "GifEncoder.h"
 #include "GifBlockWriter.h"
-#include "GifLogger.h"
+#include "Logger.h"
 #include "ColorQuantizer.h"
 #include "KMeansQuantizer.h"
 #include "MedianCutQuantizer.h"
@@ -18,25 +19,27 @@
 #include "UniformQuantizer.h"
 #include "NeuQuantQuantizer.h"
 #include "M2Ditherer.h"
-#include "DisableDitherer.h"
+#include "NoDitherer.h"
 
 using namespace std;
+using namespace blk;
 
-#if defined(__Android__)
+#if defined(__RenderScript__)
 
 #include <RenderScript.h>
-#include "../android/lib/src/main/cpp/DisableDithererWithRs.h"
+#include "../android/lib/src/main/cpp/NoDithererWithRs.h"
 #include "../android/lib/src/main/cpp/BayerDithererWithRs.h"
 
 using namespace android::RSC;
 
 sp<RS> rs = nullptr;
 
-#elif defined(__Other__)
+#elif defined(__SIMD__)
+
 
 #endif
 
-int getColorTableSizeField(int actualTableSize) {
+static int getColorTableSizeField(int actualTableSize) {
     int size = 0;
     while (1 << (size + 1) < actualTableSize) {
         ++size;
@@ -77,113 +80,76 @@ bool GifEncoder::init(const char *path, uint16_t width, uint16_t height, uint32_
     if (threadCount > 1) {
         threadPool = new ThreadPool(threadCount);
     }
-    GifLogger::log(debugLog, "Image size is " + GifLogger::toString(width * height));
+    Logger::log(debugLog, "Image size is " + Logger::toString(width * height));
     return true;
 }
 
 vector<uint8_t> GifEncoder::addImage(uint32_t *originalColors, uint32_t delay,
                                      QuantizerType quantizerType, DitherType ditherType,
-                                     float scale, uint16_t left, uint16_t top,
+                                     uint16_t left, uint16_t top,
                                      vector<uint8_t> &content) {
-    GifLogger::log(debugLog, "Get image pixel");
+    Logger::log(debugLog, "Get image pixel");
 
-    ColorQuantizer *colorQuantizer = nullptr;
+    uint32_t pixelCount = screenWidth * screenHeight;
+    unique_ptr<ColorQuantizer> colorQuantizer;
     string quantizerStr;
     switch (quantizerType) {
-        case Uniform:
-        default:
-            colorQuantizer = new UniformQuantizer();
+        case QuantizerType::Uniform:
+            colorQuantizer.reset(new UniformQuantizer());
             quantizerStr = "UniformQuantizer";
             break;
-        case MedianCut:
-            colorQuantizer = new MedianCutQuantizer();
+        case QuantizerType::MedianCut:
+            colorQuantizer.reset(new MedianCutQuantizer());
             quantizerStr = "MedianCutQuantizer";
             break;
-        case KMeans:
-            colorQuantizer = new KMeansQuantizer();
+        case QuantizerType::KMeans:
+            colorQuantizer.reset(new KMeansQuantizer());
             quantizerStr = "KMeansQuantizer";
             break;
-        case Random:
-            colorQuantizer = new RandomQuantizer();
+        case QuantizerType::Random:
+            colorQuantizer.reset(new RandomQuantizer());
             quantizerStr = "RandomQuantizer";
             break;
-        case Octree:
-            colorQuantizer = new OctreeQuantizer();
+        case QuantizerType::Octree:
+            colorQuantizer.reset(new OctreeQuantizer());
             quantizerStr = "OctreeQuantizer";
             break;
-        case NeuQuant:
-            colorQuantizer = new NeuQuantQuantizer();
+        case QuantizerType::NeuQuant:
+            colorQuantizer.reset(new NeuQuantQuantizer());
             quantizerStr = "NeuQuantQuantizer";
             break;
     }
 
-    uint32_t srcWidth;
-    uint32_t srcHeight;
-    uint32_t processSize = 0;
-    uint32_t *processColor = nullptr;
-    if (scale <= 0 || scale > 1.0f) {
-        scale = 1.0f;
-    }
-    if (scale != 1.0f) {
-        srcWidth = static_cast<uint32_t>(screenWidth * scale);
-        srcHeight = static_cast<uint32_t>(screenHeight * scale);
+    auto *pixels = reinterpret_cast<RGB *>(originalColors);
 
-        uint32_t xr = (srcWidth << 16) / screenWidth + 1;
-        uint32_t yr = (srcHeight << 16) / screenHeight + 1;
-
-        processSize = srcWidth * srcHeight;
-        processColor = new uint32_t[processSize];
-
-        for (uint16_t y = 0; y < srcHeight; ++y) {
-            for (uint16_t x = 0; x < srcWidth; ++x) {
-                uint32_t srcX = (x * xr) >> 16;
-                uint32_t srcY = (y * yr) >> 16;
-                processColor[y * srcWidth + x] = originalColors[srcY * screenHeight + srcX];
-            }
-        }
-        GifLogger::log(debugLog, "Scale");
-    } else {
-        srcWidth = screenWidth;
-        srcHeight = screenHeight;
-        processSize = 0;
-    }
-
-    colorQuantizer->width = srcWidth;
-    colorQuantizer->height = srcHeight;
-
-    size_t colorSize = screenWidth * screenHeight;
-
-    uint8_t *quantizerColors = nullptr;
+    RGB quantizerPixels[256];
     int32_t quantizerSize = 0;
-    if (colorSize > 256) {
-        if (processSize > 256) {
-            quantizerSize = colorQuantizer->quantize(processColor, processSize, 256);
-        } else {
-            quantizerSize = colorQuantizer->quantize(originalColors, colorSize, 256);
-        }
-        quantizerColors = new uint8_t[(quantizerSize + 1) * 3];
-        colorQuantizer->getColorPalette(quantizerColors);
+    if (pixelCount > 256) {
+        quantizerSize = colorQuantizer->quantize(pixels, pixelCount, 256, quantizerPixels);
     } else {
-        int quantizerIndex = 0;
-        quantizerColors = new uint8_t[(colorSize + 1) * 3];
-        for (uint32_t i = 0; i < colorSize; ++i) {
-            uint32_t color = originalColors[colorSize];
-            quantizerColors[quantizerIndex++] = static_cast<uint8_t>((color) & 0xFF);
-            quantizerColors[quantizerIndex++] = static_cast<uint8_t>((color >> 8) & 0xFF);
-            quantizerColors[quantizerIndex++] = static_cast<uint8_t>((color >> 16) & 0xFF);
-        }
+        quantizerSize = pixelCount;
+        memcpy(quantizerPixels, pixels, pixelCount * sizeof(RGB));
     }
-    GifLogger::log(debugLog, quantizerStr + " size is " + GifLogger::toString(quantizerSize));
+    Logger::log(debugLog, quantizerStr + " size is " + Logger::toString(quantizerSize));
 
     if (quantizerSize <= 0) {
         return content;
     }
 
-    Ditherer *ditherer = nullptr;
+    //    int32_t paddedColorCount = GifBlockWriter::paddedSize(quantizerSize);
+    int32_t paddedColorCount = 256;
+    GifBlockWriter::writeGraphicsControlExtensionBlock(content, 0, false, false, delay / 10, 0);
+    GifBlockWriter::writeImageDescriptorBlock(content, left, top, screenWidth, screenHeight, true,
+                                              false,
+                                              false,
+                                              getColorTableSizeField(paddedColorCount));
+    GifBlockWriter::writeColorTable(content, quantizerPixels, quantizerSize, paddedColorCount);
 
+    unique_ptr<Ditherer> ditherer;
+    unique_ptr<uint8_t[]> colorIndices(new uint8_t[pixelCount]);
     string dithererStr;
 
-#if defined(__Android__)
+#if defined(__RenderScript__)
     bool useRenderScript = false;
     if (rsCacheDir != nullptr) {
         if (rs == nullptr) {
@@ -195,108 +161,91 @@ vector<uint8_t> GifEncoder::addImage(uint32_t *originalColors, uint32_t delay,
             useRenderScript = true;
         }
     }
-#endif
-
-#if defined(__Android__)
     switch (ditherType) {
-        case Disable:
-        default:
+        case DitherType::NO:
             if (useRenderScript) {
-                ditherer = new DisableDithererWithRs();
-                dithererStr = "DisableDithererWithRs";
+                ditherer.reset(new NoDithererWithRs());
+                dithererStr = "NoDithererWithRs";
             } else {
-                ditherer = new DisableDitherer();
-                dithererStr = "DisableDitherer";
+                ditherer.reset(new NoDitherer());
+                dithererStr = "NoDitherer";
             }
             break;
-        case M2:
+        case DitherType::M2:
             useRenderScript = false;
-            ditherer = new M2Ditherer();
+            ditherer.reset(new M2Ditherer());
             dithererStr = "M2Ditherer";
             break;
-        case Bayer:
+        case DitherType::Bayer:
             if (useRenderScript) {
-                ditherer = new BayerDithererWithRs();
+                ditherer.reset(new BayerDithererWithRs());
                 dithererStr = "BayerDithererWithRs";
             } else {
-                ditherer = new BayerDitherer();
+                ditherer.reset(new BayerDitherer());
                 dithererStr = "BayerDitherer";
             }
             break;
-        case FloydSteinberg:
+        case DitherType::FloydSteinberg:
             useRenderScript = false;
-            ditherer = new FloydSteinbergDitherer();
+            ditherer.reset(new FloydSteinbergDitherer());
             dithererStr = "FloydSteinbergDitherer";
             break;
     }
-#elif defined(__Other__)
+#else
     switch (ditherType) {
-        default:
-        case Disable:
-            ditherer = new DisableDitherer();
-            dithererStr = "DisableDitherer";
+        case DitherType::NO:
+            ditherer.reset(new NoDitherer());
+            dithererStr = "NoDitherer";
             break;
-        case M2:
-            ditherer = new M2Ditherer();
+        case DitherType::M2:
+            ditherer.reset(new M2Ditherer());
             dithererStr = "M2Ditherer";
             break;
-        case Bayer:
-            ditherer = new BayerDitherer();
+        case DitherType::Bayer:
+            ditherer.reset(new BayerDitherer());
             dithererStr = "BayerDitherer";
             break;
-        case FloydSteinberg:
-            ditherer = new FloydSteinbergDitherer();
+        case DitherType::FloydSteinberg:
+            ditherer.reset(new FloydSteinbergDitherer());
             dithererStr = "FloydSteinbergDitherer";
             break;
     }
 #endif
 
-    ditherer->quantizerType = quantizerType;
-    ditherer->colorQuantizer = colorQuantizer;
-
-#if defined(__Android__)
+#if defined(__RenderScript__)
     if (useRenderScript) {
-        static_cast<DithererWithRs *>(ditherer)->dither(originalColors, screenWidth, screenHeight,
-                                                        quantizerColors,
-                                                        quantizerSize, rs);
+        static_cast<DithererWithRs *>(ditherer.get())->dither(pixels, screenWidth, screenHeight,
+                                                              quantizerPixels, quantizerSize,
+                                                              colorIndices.get(), rs);
+    } else if (quantizerType == QuantizerType::Octree && ditherType == DitherType::NO) {
+        static_cast<OctreeQuantizer *>(colorQuantizer.get())->getColorIndices(pixels,
+                                                                              colorIndices.get(),
+                                                                              pixelCount, nullptr);
     } else {
-        ditherer->dither(originalColors, screenWidth, screenHeight, quantizerColors,
-                         quantizerSize);
+        ditherer->dither(pixels, screenWidth, screenHeight, quantizerPixels, quantizerSize,
+                         colorIndices.get());
     }
-#elif defined(__Other__)
-    ditherer->dither(originalColors, screenWidth, screenHeight, quantizerColors,
-                     quantizerSize);
+#else
+    if (quantizerType == QuantizerType::Octree && ditherType == DitherType::NO) {
+        static_cast<OctreeQuantizer *>(colorQuantizer.get())->getColorIndices(pixels,
+                                                                              colorIndices.get(),
+                                                                              pixelCount, nullptr);
+    } else {
+        ditherer->dither(pixels, screenWidth, screenHeight, quantizerPixels, quantizerSize,
+                         colorIndices.get());
+    }
 #endif
 
-    auto *colorIndices = new uint32_t[colorSize];
-    ditherer->getColorIndices(colorIndices, colorSize);
-    delete colorQuantizer;
-    delete ditherer;
+    Logger::log(debugLog, dithererStr);
 
-    GifLogger::log(debugLog, dithererStr);
-
-//    int32_t paddedColorCount = GifBlockWriter::paddedSize(quantizerSize);
-    int32_t paddedColorCount = 256;
-
-    GifBlockWriter::writeGraphicsControlExtensionBlock(content, 0, false, false, delay, 0);
-    GifBlockWriter::writeImageDescriptorBlock(content, left, top, screenWidth, screenHeight, true,
-                                              false,
-                                              false,
-                                              getColorTableSizeField(paddedColorCount));
-    GifBlockWriter::writeColorTable(content, quantizerColors, quantizerSize, paddedColorCount);
-    delete[] quantizerColors;
-
-    auto *lzwData = new char[colorSize]{0};
     LzwEncoder lzwEncoder(paddedColorCount);
-    lzwEncoder.encode(colorIndices, screenWidth, screenHeight, colorSize, lzwData, content);
-    GifLogger::log(debugLog, "LZW encode");
-    delete[] colorIndices;
-    delete[] lzwData;
+    lzwEncoder.encode(colorIndices.get(), screenWidth, screenHeight, content);
+    Logger::log(debugLog, "LZW encode");
     return content;
 }
 
 void GifEncoder::flush(vector<uint8_t> &content) {
-    uint64_t size = content.size();
+    size_t size = content.size();
     for (int i = 0; i < size; ++i) {
         outfile.write((char *) (&content[i]), 1);
     }
@@ -304,4 +253,5 @@ void GifEncoder::flush(vector<uint8_t> &content) {
 
 void GifEncoder::finishEncoding() {
     GifBlockWriter::writeTerminator(outfile);
+    outfile.close();
 }

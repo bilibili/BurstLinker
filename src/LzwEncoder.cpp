@@ -2,13 +2,15 @@
 // Created by succlz123 on 17-9-9.
 //
 
+#include <iostream>
 #include "LzwEncoder.h"
-#include <vector>
 
 using namespace std;
+using namespace blk;
 
-const int32_t MAX_STACK_SIZE = 4096;
-const int32_t BYTE_NUM = 256;
+static const int32_t MAX_STACK_SIZE = 4096;
+static const int32_t BYTE_NUM = 256;
+static const int32_t BLOCK_SIZE = 255;
 
 LzwEncoder::~LzwEncoder() {
     for (auto &data : datas) {
@@ -16,7 +18,7 @@ LzwEncoder::~LzwEncoder() {
     }
 }
 
-LzwEncoder::LzwEncoder(int paddedColorCount) {
+LzwEncoder::LzwEncoder(int32_t paddedColorCount) {
     numColors = paddedColorCount;
     current = new uint8_t[BLOCK_SIZE];
     memset(current, 0, BLOCK_SIZE);
@@ -65,13 +67,13 @@ void LzwEncoder::writeBits(uint32_t src, int32_t bitNum) {
 //    return total;
 //}
 
-const uint8_t BLOCK_TERMINATOR = 0x00;
-const uint8_t BLOCK_TERMINATOR1 = 0x8;
+static const uint8_t BLOCK_TERMINATOR = 0x00;
+static const uint8_t BLOCK_MIN_CODE_SIZE = 0x8;
 
 int LzwEncoder::write(vector<uint8_t> &content, uint8_t minimumCodeSize) {
-//    file.write((const char *) &BLOCK_TERMINATOR1, 1);
-    content.emplace_back(BLOCK_TERMINATOR1);
-    uint8_t size;
+//    file.write((const char *) &BLOCK_MIN_CODE_SIZE, 1);
+    content.emplace_back(minimumCodeSize);
+    int size;
     int total = 0;
     for (auto block : datas) {
         size = block == current ? (remain == 0 ? pos : pos + 1) : BLOCK_SIZE;
@@ -88,8 +90,8 @@ int LzwEncoder::write(vector<uint8_t> &content, uint8_t minimumCodeSize) {
     return total;
 }
 
-void LzwEncoder::encode(uint32_t indices[], int width, int height, int size, char out[], vector<uint8_t> &content) {
-    uint32_t *endPixels = indices + width * height;
+void LzwEncoder::encode(uint8_t indices[], uint16_t width, uint16_t height, vector<uint8_t> &content) {
+    uint8_t *endPixels = indices + width * height;
     uint8_t dataSize = 8;
     uint32_t codeSize = dataSize + 1;
     uint32_t codeMask = (1 << codeSize) - 1;

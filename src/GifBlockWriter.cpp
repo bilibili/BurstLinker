@@ -6,13 +6,14 @@
 #include "GifBlockWriter.h"
 
 using namespace std;
+using namespace blk;
 
 void GifBlockWriter::writeHeaderBlock(ofstream &file) {
     file.write("GIF89a", 6);
 }
 
-const uint32_t GLOBAL_COLOR_TABLE_FLAG = 1 << 7;
-const uint32_t LSD_SORT_FLAG = 1 << 3;
+static const uint32_t GLOBAL_COLOR_TABLE_FLAG = 1 << 7;
+static const uint32_t LSD_SORT_FLAG = 1 << 3;
 
 void
 GifBlockWriter::writeLogicalScreenDescriptorBlock(ofstream &file, int32_t logicalScreenWidth,
@@ -25,23 +26,25 @@ GifBlockWriter::writeLogicalScreenDescriptorBlock(ofstream &file, int32_t logica
     file.write((char *) (&logicalScreenWidth), 2);
     file.write((char *) (&logicalScreenHeight), 2);
 
-    uint8_t packed = ((globalColorTable ? GLOBAL_COLOR_TABLE_FLAG : 0)
-                      | (colorResolution << 4)
-                      | (sort ? LSD_SORT_FLAG : 0)
-                      | globalColorTableSize);
+    auto packed = static_cast<uint8_t>(
+            (globalColorTable ? GLOBAL_COLOR_TABLE_FLAG : 0)
+            | (colorResolution << 4)
+            | (sort ? LSD_SORT_FLAG : 0)
+            | globalColorTableSize
+    );
     file.write((char *) (&packed), 1);
     file.write((char *) (&backgroundColorIndex), 1);
     file.write((char *) (&pixelAspectRatio), 1);
 }
 
-const uint8_t EXTENSION_INTRODUCER = 0x21;
-const uint8_t BLOCK_TERMINATOR = 0x00;
+static const uint8_t EXTENSION_INTRODUCER = 0x21;
+static const uint8_t BLOCK_TERMINATOR = 0x00;
 
-const uint8_t APPLICATION_EXTENSION = 0xFF;
-const uint8_t APPLICATION_LENGTH = 0x0B;
-const uint8_t APPLICATION[] = "NETSCAPE2.0";
-const uint8_t SUB_BLOCK_SIZE = 0x03;
-const uint8_t SUB_BLOCK_ID = 0x01;
+static const uint8_t APPLICATION_EXTENSION = 0xFF;
+static const uint8_t APPLICATION_LENGTH = 0x0B;
+static const uint8_t APPLICATION[] = "NETSCAPE2.0";
+static const uint8_t SUB_BLOCK_SIZE = 0x03;
+static const uint8_t SUB_BLOCK_ID = 0x01;
 
 // Application Extension
 void GifBlockWriter::writeNetscapeLoopingExtensionBlock(ofstream &file, uint32_t loopCount) {
@@ -58,11 +61,11 @@ void GifBlockWriter::writeNetscapeLoopingExtensionBlock(ofstream &file, uint32_t
     file.write((char *) (&BLOCK_TERMINATOR), 1);
 }
 
-const uint32_t USER_INPUT_FLAG = 1 << 1;
-const uint32_t TRANSPARENT_COLOR_FLAG = 1;
+static const uint32_t USER_INPUT_FLAG = 1 << 1;
+static const uint32_t TRANSPARENT_COLOR_FLAG = 1;
 
-const uint8_t GRAPHICS_CONTROL_LABEL = 0xF9;
-const uint8_t GRAPHICS_CONTROL_EXTENSION_BLOCK_SIZE = 0x04;
+static const uint8_t GRAPHICS_CONTROL_LABEL = 0xF9;
+static const uint8_t GRAPHICS_CONTROL_EXTENSION_BLOCK_SIZE = 0x04;
 
 void GifBlockWriter::writeGraphicsControlExtensionBlock(vector<uint8_t> &content, int32_t disposalMethod,
                                                         bool userInput,
@@ -88,9 +91,11 @@ void GifBlockWriter::writeGraphicsControlExtensionBlock(vector<uint8_t> &content
     content.emplace_back(GRAPHICS_CONTROL_LABEL);
     content.emplace_back(GRAPHICS_CONTROL_EXTENSION_BLOCK_SIZE);
 
-    uint8_t packed = (disposalMethod << 3
-                      | (userInput ? USER_INPUT_FLAG : 0)
-                      | (transparentColor ? TRANSPARENT_COLOR_FLAG : 0));
+    auto packed = static_cast<uint8_t>(
+            disposalMethod << 3
+            | (userInput ? USER_INPUT_FLAG : 0)
+            | (transparentColor ? TRANSPARENT_COLOR_FLAG : 0)
+    );
     content.emplace_back(packed);
 
     auto delay1 = static_cast<uint8_t>(delayCentiseconds & 0xFF);
@@ -103,10 +108,10 @@ void GifBlockWriter::writeGraphicsControlExtensionBlock(vector<uint8_t> &content
     content.emplace_back(BLOCK_TERMINATOR);
 }
 
-const uint8_t IMAGE_SEPARATOR = 0x2C;
-const uint32_t LOCAL_COLOR_TABLE_FLAG = 1 << 7;
-const uint32_t INTERLACE_FLAG = 1 << 6;
-const uint32_t ID_SORT_FLAG = 1 << 5;
+static const uint8_t IMAGE_SEPARATOR = 0x2C;
+static const uint32_t LOCAL_COLOR_TABLE_FLAG = 1 << 7;
+static const uint32_t INTERLACE_FLAG = 1 << 6;
+static const uint32_t ID_SORT_FLAG = 1 << 5;
 
 void
 GifBlockWriter::writeImageDescriptorBlock(vector<uint8_t> &content, uint16_t imageLeft, uint16_t imageTop,
@@ -123,10 +128,12 @@ GifBlockWriter::writeImageDescriptorBlock(vector<uint8_t> &content, uint16_t ima
     content.emplace_back(imageWidth >> 8);
     content.emplace_back(imageHeight & 0xFF);
     content.emplace_back(imageHeight >> 8);
-    uint8_t packed = ((localColorTable ? LOCAL_COLOR_TABLE_FLAG : 0)
-                      | (interlace ? INTERLACE_FLAG : 0)
-                      | (sort ? ID_SORT_FLAG : 0)
-                      | localColorTableSize);
+    auto packed = static_cast<uint8_t>(
+            (localColorTable ? LOCAL_COLOR_TABLE_FLAG : 0)
+            | (interlace ? INTERLACE_FLAG : 0)
+            | (sort ? ID_SORT_FLAG : 0)
+            | localColorTableSize
+    );
     content.emplace_back(packed);
 //    file.write((const char *) (&IMAGE_SEPARATOR), 1);
 //    file.write((const char *) (&imageLeft), 2);
@@ -153,16 +160,13 @@ int32_t GifBlockWriter::paddedSize(int32_t size) {
     return n;
 }
 
-void GifBlockWriter::writeColorTable(vector<uint8_t> &content, uint8_t *quantizerColors,
+void GifBlockWriter::writeColorTable(vector<uint8_t> &content, RGB quantizerPixels[],
                                      int quantizerSize, int paddedSize) {
     int32_t unpaddedSize = quantizerSize;
-    for (int k = 0; k < quantizerSize * 3; k = k + 3) {
-        uint32_t r = quantizerColors[k];
-        uint32_t g = quantizerColors[k + 1];
-        uint32_t b = quantizerColors[k + 2];
-        content.emplace_back(r);
-        content.emplace_back(g);
-        content.emplace_back(b);
+    for (int k = 0; k < quantizerSize; k++) {
+        content.emplace_back(quantizerPixels[k].r);
+        content.emplace_back(quantizerPixels[k].g);
+        content.emplace_back(quantizerPixels[k].b);
 //        file.write((char *) (&r), 1);
 //        file.write((char *) (&g), 1);
 //        file.write((char *) (&b), 1);
@@ -189,7 +193,7 @@ GifBlockWriter::writeImageDataBlock(ofstream &file, uint8_t colorDepth, list<uin
     file.write((char *) (&BLOCK_TERMINATOR), 1);
 }
 
-const uint8_t GIF_TERMINATOR = 0x3B;
+static const uint8_t GIF_TERMINATOR = 0x3B;
 
 void
 GifBlockWriter::writeTerminator(ofstream &file) {

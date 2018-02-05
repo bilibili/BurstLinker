@@ -5,39 +5,34 @@
 #ifndef BURSTLINKER_KDTREE_H
 #define BURSTLINKER_KDTREE_H
 
-#include <fstream>
+#include "GifEncoder.h"
 
-class KDTree {
+namespace blk {
 
-public:
+    class KDTree {
 
-    struct Compare {
+    public:
 
-        int split;
+        struct Node {
+            uint8_t r = 0;
+            uint8_t g = 0;
+            uint8_t b = 0;
+            uint8_t index = 0;
+            uint8_t split = 0;
+            Node *left = nullptr;
+            Node *right = nullptr;
+        };
 
-        explicit Compare(int split) : split(split) {};
+        Node nearest;
 
-        bool operator()(const int *a, const int *b) {
-            return a[split] < b[split];
-        }
+        void *createKDTree(Node *node, RGB rgb[], int32_t start, int32_t end, uint8_t split);
+
+        int searchNNNoBacktracking(Node *node, RGB target, int32_t dis);
+
+        void freeKDTree(Node *tree);
+
     };
 
-    struct Node {
-        int *data = nullptr;
-        int split = 0;
-        Node *left = nullptr;
-        Node *right = nullptr;
-    };
+}
 
-    Node nearest;
-
-    Node *createKDTree(int **data, int size, int split);
-
-    int searchNN(Node *node, int *target, int dis);
-
-    void freeKDTree(Node *tree);
-
-};
-
-
-#endif //BURSTLINKER_KMEANS_H
+#endif //BURSTLINKER_KDTREE_H

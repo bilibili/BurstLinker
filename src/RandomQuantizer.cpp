@@ -3,28 +3,30 @@
 //
 
 #include <random>
-#include <ctime>
 #include "RandomQuantizer.h"
 
 using namespace std;
+using namespace blk;
 
-int32_t RandomQuantizer::quantize(uint32_t *originalColors, uint32_t pixelCount, uint32_t maxColorCount) {
-    mt19937 generator((uint32_t)time(nullptr));
+int32_t RandomQuantizer::quantize(RGB *pixels, uint32_t pixelCount, uint32_t maxColorCount, RGB out[]) {
+    mt19937 generator((uint32_t) time(nullptr));
     uniform_int_distribution<uint32_t> dis(0, pixelCount);
-    set<uint32_t> randomColor;
-	uint32_t index = 0;
-	uint32_t maxCount = pixelCount / 4;
+    set<RGB> randomColor;
+    uint32_t index = 0;
+    uint32_t maxCount = pixelCount / 4;
     while (randomColor.size() < maxColorCount && index < maxCount) {
-		index++;
+        index++;
         uint32_t random = dis(generator);
-        randomColor.insert(originalColors[random]);
+        randomColor.insert(pixels[random]);
     }
-    resultSize = randomColor.size();
+    resultSize = static_cast<int32_t>(randomColor.size());
     int colorPaletteIndex = 0;
-    for (uint32_t color:randomColor) {
-        colorPalette[colorPaletteIndex++] = color & 0xFF;
-        colorPalette[colorPaletteIndex++] = color >> 8 & 0xFF;
-        colorPalette[colorPaletteIndex++] = color >> 16 & 0xFF;
+    for (RGB color:randomColor) {
+        out[colorPaletteIndex].r = color.r;
+        out[colorPaletteIndex].g = color.g;
+        out[colorPaletteIndex].b = color.b;
+        out[colorPaletteIndex].index = static_cast<uint8_t>(colorPaletteIndex);
+        colorPaletteIndex++;
     }
     return resultSize;
 }

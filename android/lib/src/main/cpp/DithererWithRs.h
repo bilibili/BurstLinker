@@ -5,19 +5,22 @@
 #ifndef BURSTLINKER_DITHERERWITHRS_H
 #define BURSTLINKER_DITHERERWITHRS_H
 
-
 #include "../../../../../src/Ditherer.h"
+#include <RenderScript.h>
 
-class DithererWithRs : public Ditherer {
+class DithererWithRs : public blk::Ditherer {
 
 public:
 
-    void dither(uint32_t *originalColors, int width, int height, uint8_t *quantizerColors,
-                int quantizerSize) override {};
+    void
+    dither(blk::RGB *originPixels, uint16_t width, uint16_t height,
+           blk::RGB quantizerPixels[], int32_t quantizerSize,
+           uint8_t *colorIndices) {};
 
     virtual void
-    dither(uint32_t *originalColors, int width, int height, unsigned char *quantizerColors,
-           int quantizerSize, sp<RS> rs)=0;
+    dither(blk::RGB *originPixels, uint16_t width, uint16_t height,
+           blk::RGB quantizerPixels[], int32_t quantizerSize,
+           uint8_t *colorIndices, android::RSC::sp<android::RSC::RS> rs)=0;
 
 };
 

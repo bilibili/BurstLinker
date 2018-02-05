@@ -4,29 +4,29 @@
 
 Idea from: [square/gifencoder](https://github.com/square/gifencoder)
 
-BurstLinker is a simple and fast C++ GIF encode library. You can easily use it on Android, Windows, Linux or other platforms.
+BurstLinker is a simple C++ GIF encode library.
 
-## Android platform
+## Android
 
 ### Download
 
 Gradle:
 
 ```
-implementation 'com.bilibili:burst-linker:0.0.1'
+implementation 'com.bilibili:burst-linker:latest-version'
 ```
 
 ### Build Environment
 
-Android Studio 3.0.1
+Android Studio 3.1.4
 
-NDK r16
+NDK r17
 
 ### Basic usage
 
 ``` java
-int delayMs = 100;
-String filePath = getExternalCacheDir() + File.separator + "out.gif";
+int delayMs = 1000;
+String filePath = getCacheDir() + File.separator + "out.gif";
 BurstLinker burstLinker = new BurstLinker();
 
 try {
@@ -39,7 +39,7 @@ try {
         p.setColor(color);
         canvas.drawRect(0, 0, width, height, p);
         burstLinker.connect(colorBitmap, BurstLinker.OCTREE_QUANTIZER, 
-                BurstLinker.DISABLE_DITHER, 0, 0, delayMs);
+                BurstLinker.NO_DITHER, 0, 0, delayMs);
     }
 } catch (GifEncodeException e) {
     e.printStackTrace();
@@ -53,42 +53,40 @@ try {
 > This is an untested experimental feature
 
 1. Git branch `/feature/render-script`
-2. Gradle sync, It will generate the required ScriptC.cpp
+2. Gradle sync, It will generate the required ScriptC_*.cpp
 3. Uncomment the line 64 of the /lib/CMakeLists.txt
 4. Run
 
-## Unix-like platform
+## Linux & Mac
 
-1. Install [FreeImage](http://freeimage.sourceforge.net/) & [CMake](http://www.cmake.org/)
-   - Mac  `brew install freeimage cmake`   
-   - Debian `sudo apt-get install libfreeimage-dev cmake`
-   - RedHat  `sudo yum install freeimage-devel cmake`
-   - ArchLinux `sudo pacman -S freeimage cmake`
+1. Install [CMake](http://www.cmake.org/)
+   - Mac  `brew install cmake`   
+   - ArchLinux `sudo pacman -S cmake`
 
 2. Build
-   - `cd /BurstLinker/src`
+   - `cd /BurstLinker`
    - `mkdir cmake-build-debug; cd cmake-build-debug`
    - `cmake ..`
-   - `make`
+   - `make BurstLinker`
 
 3. Run
-   - `./BurstLinker 100 1.jpg 2.jpg 3.jpg` 
+   - `./BurstLinker 1000 1.jpg 2.jpg 3.jpg` 
    - See out.gif
 
-## Windows platform
+## Windows
 
 1. Install [Microsoft Visual Studio](https://www.visualstudio.com/) & [CMake](http://www.cmake.org/)
 
 2. Build
-   - `cd /BurstLinker/src`
+   - `cd /BurstLinker`
    - `mkdir cmake-build-debug; cd cmake-build-debug`
    - `cmake ..`
    - Open BurstLinker.sln
-   - Solution Explorer -> ALL_BUILD -> Build -> INSTALL -> Build
+   - Solution Explorer -> BurstLinker -> Build
 
 3. Run
    - `cd Debug`
-   - `BurstLinker.exe 100 1.jpg 2.jpg 3.jpg` 
+   - `BurstLinker.exe 1000 1.jpg 2.jpg 3.jpg` 
    - See out.gif
 
 # Thanks
@@ -113,6 +111,7 @@ try {
 
 ```
 Copyright 2018 Bilibili
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at

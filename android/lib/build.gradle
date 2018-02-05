@@ -7,7 +7,7 @@ ext {
 
 android {
     compileSdkVersion 27
-    buildToolsVersion '26.0.2'
+    buildToolsVersion '27.0.3'
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 27
@@ -21,10 +21,11 @@ android {
 
         externalNativeBuild {
             cmake {
-                abiFilters 'armeabi-v7a', 'x86'
-//                arguments '-DANDROID_ARM_NEON=TRUE'
-                arguments '-DANDROID_STL=gnustl_shared'
-                cppFlags "-std=c++14 -fno-rtti -fexceptions"
+//                abiFilters 'armeabi-v7a', 'x86'
+//                arguments "-DANDROID_ARM_NEON=TRUE"
+//                arguments "-DANDROID_ABI=armeabi-v7a with NEON"
+                arguments "-DANDROID_STL=c++_static"
+                cppFlags "-std=c++11 -fno-rtti -fno-exceptions"
             }
         }
     }

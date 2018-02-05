@@ -5,21 +5,20 @@
 #ifndef BURSTLINKER_BAYERDITHERER_H
 #define BURSTLINKER_BAYERDITHERER_H
 
-
-#include <vector>
 #include "Ditherer.h"
 
-using namespace std;
+namespace blk {
 
+    class BayerDitherer : public Ditherer {
 
-class BayerDitherer : public Ditherer {
+    public:
 
-public:
+        void
+        dither(RGB *originPixels, uint16_t width, uint16_t height,
+               RGB quantizerPixels[], int32_t quantizerSize,
+               uint8_t *colorIndices) override;
+    };
 
-    void
-    dither(uint32_t *originalColors, int width, int height,
-           uint8_t *quantizerColors, int quantizerSize) override;
-};
-
+}
 
 #endif //BURSTLINKER_BAYERDITHERER_H
