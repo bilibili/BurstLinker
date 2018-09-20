@@ -6,44 +6,44 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 #file(GLOB SOURCE_FILES *.cpp)
 
-set(srcdir src)
-set(thirdpartdir thirdpart)
-set(exampledir example)
+set(src_dir src)
+set(third_part_dir third_part)
+set(example_dir example)
 
 set(SOURCE_FILES
-        ${srcdir}/ThreadPool.h
-        ${srcdir}/GifEncoder.h ${srcdir}/GifEncoder.cpp
-        ${srcdir}/GifAnalyzer.cpp ${srcdir}/GifAnalyzer.h
-        ${srcdir}/GifBlockWriter.cpp ${srcdir}/GifBlockWriter.h
-        ${srcdir}/KDTree.cpp ${srcdir}/KDTree.h
-        ${srcdir}/LzwEncoder.cpp ${srcdir}/LzwEncoder.h
-        ${srcdir}/Logger.cpp ${srcdir}/Logger.h
+        ${src_dir}/ThreadPool.h
+        ${src_dir}/GifEncoder.h ${src_dir}/GifEncoder.cpp
+        ${src_dir}/GifAnalyzer.cpp ${src_dir}/GifAnalyzer.h
+        ${src_dir}/GifBlockWriter.cpp ${src_dir}/GifBlockWriter.h
+        ${src_dir}/KDTree.cpp ${src_dir}/KDTree.h
+        ${src_dir}/LzwEncoder.cpp ${src_dir}/LzwEncoder.h
+        ${src_dir}/Logger.cpp ${src_dir}/Logger.h
 
-        ${srcdir}/Ditherer.h
-        ${srcdir}/NoDitherer.cpp ${srcdir}/NoDitherer.h
-        ${srcdir}/BayerDitherer.cpp ${srcdir}/BayerDitherer.h
-        ${srcdir}/M2Ditherer.cpp ${srcdir}/M2Ditherer.h
-        ${srcdir}/FloydSteinbergDitherer.cpp ${srcdir}/FloydSteinbergDitherer.h
+        ${src_dir}/Ditherer.h
+        ${src_dir}/NoDitherer.cpp ${src_dir}/NoDitherer.h
+        ${src_dir}/BayerDitherer.cpp ${src_dir}/BayerDitherer.h
+        ${src_dir}/M2Ditherer.cpp ${src_dir}/M2Ditherer.h
+        ${src_dir}/FloydSteinbergDitherer.cpp ${src_dir}/FloydSteinbergDitherer.h
 
-        ${srcdir}/ColorQuantizer.h
-        ${srcdir}/UniformQuantizer.cpp ${srcdir}/UniformQuantizer.h
-        ${srcdir}/RandomQuantizer.cpp ${srcdir}/RandomQuantizer.h
-        ${srcdir}/MedianCutQuantizer.cpp ${srcdir}/MedianCutQuantizer.h
-        ${srcdir}/KMeansQuantizer.cpp ${srcdir}/KMeansQuantizer.h
-        ${srcdir}/OctreeQuantizer.cpp ${srcdir}/OctreeQuantizer.h
-        ${srcdir}/NeuQuant.cpp ${srcdir}/NeuQuant.h
-        ${srcdir}/NeuQuantQuantizer.cpp ${srcdir}/NeuQuantQuantizer.h
-        ${srcdir}/BurstLinker.cpp ${srcdir}/BurstLinker.h
+        ${src_dir}/ColorQuantizer.h
+        ${src_dir}/UniformQuantizer.cpp ${src_dir}/UniformQuantizer.h
+        ${src_dir}/RandomQuantizer.cpp ${src_dir}/RandomQuantizer.h
+        ${src_dir}/MedianCutQuantizer.cpp ${src_dir}/MedianCutQuantizer.h
+        ${src_dir}/KMeansQuantizer.cpp ${src_dir}/KMeansQuantizer.h
+        ${src_dir}/OctreeQuantizer.cpp ${src_dir}/OctreeQuantizer.h
+        ${src_dir}/NeuQuant.cpp ${src_dir}/NeuQuant.h
+        ${src_dir}/NeuQuantQuantizer.cpp ${src_dir}/NeuQuantQuantizer.h
+        ${src_dir}/BurstLinker.cpp ${src_dir}/BurstLinker.h
 
-        ${thirdpartdir}/stb_image.h
+        ${third_part_dir}/stb_image.h
         )
 
 set(BURSTLINKER_FILES
-        ${srcdir}/Main.cpp
+        ${src_dir}/Main.cpp
         )
 
 set(EXAMPLE_FILES
-        ${exampledir}/Main.cpp
+        ${example_dir}/Main.cpp
         )
 
 add_executable(BurstLinker ${SOURCE_FILES} ${BURSTLINKER_FILES})

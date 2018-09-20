@@ -7,7 +7,7 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 
-#include "../thirdpart/stb_image.h"
+#include "../third_part/stb_image.h"
 
 
 using namespace std;
