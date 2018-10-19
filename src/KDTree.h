@@ -25,9 +25,9 @@ namespace blk {
 
         Node nearest;
 
-        void *createKDTree(Node *node, RGB rgb[], int32_t start, int32_t end, uint8_t split);
+        void *createKDTree(Node *node, std::vector<ARGB> &quantize, int32_t start, int32_t end, uint8_t split);
 
-        int searchNNNoBacktracking(Node *node, RGB target, int32_t dis);
+        int searchNoBacktracking(Node *node, uint8_t r, uint8_t g, uint8_t b, int32_t dis);
 
         void freeKDTree(Node *tree);
 

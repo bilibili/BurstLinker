@@ -11,7 +11,6 @@
 #include <vector>
 
 using namespace android::RSC;
-using namespace std;
 
 class DisableDithererWithRs : public DithererWithRs {
 

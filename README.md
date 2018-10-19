@@ -6,9 +6,9 @@ Idea from: [square/gifencoder](https://github.com/square/gifencoder)
 
 BurstLinker is a simple C++ GIF encode library.
 
-## Android
+## Download
 
-### Download
+### Android
 
 Gradle:
 
@@ -16,13 +16,13 @@ Gradle:
 implementation 'com.bilibili:burst-linker:latest-version'
 ```
 
-### Build Environment
+#### Build Environment
 
-Android Studio 3.1.4
+Android Studio 3.2.1
 
-NDK r17
+NDK r18
 
-### Basic usage
+#### Basic usage
 
 ``` java
 int delayMs = 1000;
@@ -48,7 +48,7 @@ try {
 }
 ```
 
-### Enable RenderScript Support
+#### Enable RenderScript Support
 
 > This is an untested experimental feature
 
@@ -57,7 +57,7 @@ try {
 3. Uncomment the line 64 of the /lib/CMakeLists.txt
 4. Run
 
-## Linux & Mac
+### Linux & Mac
 
 1. Install [CMake](http://www.cmake.org/)
    - Mac  `brew install cmake`   
@@ -73,7 +73,7 @@ try {
    - `./BurstLinker 1000 1.jpg 2.jpg 3.jpg` 
    - See out.gif
 
-## Windows
+### Windows
 
 1. Install [Microsoft Visual Studio](https://www.visualstudio.com/) & [CMake](http://www.cmake.org/)
 
@@ -89,7 +89,69 @@ try {
    - `BurstLinker.exe 1000 1.jpg 2.jpg 3.jpg` 
    - See out.gif
 
-# Thanks
+## Samples
+
+### Different quantizers & ditherers
+
+- Original
+
+![original](screenshot/lenna-original.png)
+
+- Uniform + No
+
+![uniform](screenshot/uniform.gif)
+
+- MedianCut + No
+
+![media-cut](screenshot/media-cut.gif)
+
+- KMeans + No
+
+![k-means](screenshot/k-means.gif)
+
+- Random + No
+
+![random](screenshot/random.gif)
+
+- Octree + No
+
+![octree](screenshot/octree.gif)
+
+- NeuQuant - 10 + No
+
+![neu-quant-10](screenshot/neu-quant-10.gif)
+
+- NeuQuant - 1 + No
+
+![neu-quant-1](screenshot/neu-quant-1.gif)
+
+- Octree + M2
+
+![uniform](screenshot/octree-m2.gif)
+
+- Octree + Bayer
+
+![octree-bayer](screenshot/octree-bayer.gif) 
+
+- Octree + FloydSteinberg
+
+![octree-floyd-steinberg](screenshot/octree-floyd-steinberg.gif)
+
+### Encoding with transparent image
+
+- Original
+
+![bilibili](screenshot/bilibili.png)
+
+- Octree + No + Default (ARGB.a != 0)
+
+![bilibili-octree](screenshot/bilibili-octree-default.gif)
+
+- Octree + No + Ignore translucency (ARGB.a == 255)
+
+![bilibili-octree](screenshot/bilibili-octree-ignore.gif)
+
+## Thanks
 
 [square/gifencoder](https://github.com/square/gifencoder)
 
@@ -107,7 +169,7 @@ try {
 
 [progschj/ThreadPool](https://github.com/progschj/ThreadPool)
 
-# License
+## License
 
 ```
 Copyright 2018 Bilibili

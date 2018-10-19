@@ -10,7 +10,6 @@
 #include <RenderScript.h>
 
 using namespace android::RSC;
-using namespace std;
 
 class BayerDithererWithRs : public DithererWithRs {
 

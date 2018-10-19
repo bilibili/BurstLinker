@@ -6,11 +6,11 @@ ext {
 }
 
 android {
-    compileSdkVersion 27
-    buildToolsVersion '27.0.3'
+    compileSdkVersion 28
+    buildToolsVersion '28.0.3'
     defaultConfig {
         minSdkVersion 14
-        targetSdkVersion 27
+        targetSdkVersion 28
         versionCode 1
         versionName VERSION_NAME.toString()
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -25,7 +25,7 @@ android {
 //                arguments "-DANDROID_ARM_NEON=TRUE"
 //                arguments "-DANDROID_ABI=armeabi-v7a with NEON"
                 arguments "-DANDROID_STL=c++_static"
-                cppFlags "-std=c++11 -fno-rtti -fno-exceptions"
+                cppFlags "-std=c++14 -fno-rtti -fno-exceptions"
             }
         }
     }

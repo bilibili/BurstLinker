@@ -95,7 +95,7 @@ namespace blk {
         void unbiasnet();
 
         // Output colour dither
-        int getColourMap(RGB colorPalette[]);
+        int getColourMap(std::vector<ARGB> &out, uint32_t maxColorCount);
 
         // Insertion sort of network and building of netindex[0..255] (to do after unbias)
         void inxbuild();

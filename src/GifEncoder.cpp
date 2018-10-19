@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <random>
 #include "GifEncoder.h"
 #include "GifBlockWriter.h"
 #include "Logger.h"
@@ -21,7 +22,6 @@
 #include "M2Ditherer.h"
 #include "NoDitherer.h"
 
-using namespace std;
 using namespace blk;
 
 #if defined(__RenderScript__)
@@ -58,13 +58,12 @@ GifEncoder::~GifEncoder() {
     }
 #endif
     outfile.close();
-    delete threadPool;
     delete[] rsCacheDir;
 }
 
 bool GifEncoder::init(const char *path, uint16_t width, uint16_t height, uint32_t loopCount,
                       uint32_t threadCount) {
-    outfile.open(path, ios::out | ios::binary);
+    outfile.open(path, std::ios::out | std::ios::binary);
     if (!outfile.is_open()) {
         return false;
     }
@@ -78,76 +77,144 @@ bool GifEncoder::init(const char *path, uint16_t width, uint16_t height, uint32_
         threadCount = 8;
     }
     if (threadCount > 1) {
-        threadPool = new ThreadPool(threadCount);
+        threadPool = std::make_unique<ThreadPool>(threadCount);
     }
     Logger::log(debugLog, "Image size is " + Logger::toString(width * height));
     return true;
 }
 
-vector<uint8_t> GifEncoder::addImage(uint32_t *originalColors, uint32_t delay,
-                                     QuantizerType quantizerType, DitherType ditherType,
-                                     uint16_t left, uint16_t top,
-                                     vector<uint8_t> &content) {
-    Logger::log(debugLog, "Get image pixel");
+std::vector<uint8_t> GifEncoder::addImage(const std::vector<uint32_t> &original, uint32_t delay,
+                                          QuantizerType qType, DitherType dType,
+                                          int32_t transparencyOption, uint16_t left, uint16_t top,
+                                          std::vector<uint8_t> &content) {
+    Logger::log(debugLog, "Get image pixel " + Logger::toString(original.size()));
 
-    uint32_t pixelCount = screenWidth * screenHeight;
-    unique_ptr<ColorQuantizer> colorQuantizer;
-    string quantizerStr;
-    switch (quantizerType) {
+    uint32_t size = screenWidth * screenHeight;
+    std::unique_ptr<ColorQuantizer> colorQuantizer;
+    std::string quantizerStr;
+    switch (qType) {
         case QuantizerType::Uniform:
-            colorQuantizer.reset(new UniformQuantizer());
+            colorQuantizer = std::make_unique<UniformQuantizer>();
             quantizerStr = "UniformQuantizer";
             break;
         case QuantizerType::MedianCut:
-            colorQuantizer.reset(new MedianCutQuantizer());
+            colorQuantizer = std::make_unique<MedianCutQuantizer>();
             quantizerStr = "MedianCutQuantizer";
             break;
         case QuantizerType::KMeans:
-            colorQuantizer.reset(new KMeansQuantizer());
+            colorQuantizer = std::make_unique<KMeansQuantizer>();
             quantizerStr = "KMeansQuantizer";
             break;
         case QuantizerType::Random:
-            colorQuantizer.reset(new RandomQuantizer());
+            colorQuantizer = std::make_unique<RandomQuantizer>();
             quantizerStr = "RandomQuantizer";
             break;
         case QuantizerType::Octree:
-            colorQuantizer.reset(new OctreeQuantizer());
+            colorQuantizer = std::make_unique<OctreeQuantizer>();
             quantizerStr = "OctreeQuantizer";
             break;
         case QuantizerType::NeuQuant:
-            colorQuantizer.reset(new NeuQuantQuantizer());
+            colorQuantizer = std::make_unique<NeuQuantQuantizer>();
             quantizerStr = "NeuQuantQuantizer";
             break;
     }
 
-    auto *pixels = reinterpret_cast<RGB *>(originalColors);
-
-    RGB quantizerPixels[256];
-    int32_t quantizerSize = 0;
-    if (pixelCount > 256) {
-        quantizerSize = colorQuantizer->quantize(pixels, pixelCount, 256, quantizerPixels);
-    } else {
-        quantizerSize = pixelCount;
-        memcpy(quantizerPixels, pixels, pixelCount * sizeof(RGB));
+    std::vector<ARGB> quantizeIn;
+    quantizeIn.reserve(size);
+    bool enableTransparentColor = ((transparencyOption & 0xff) == 1);
+    bool ignoreTranslucency = (((transparencyOption >> 8) & 0xff) == 1);
+    bool hasTransparentColor = false;
+    uint8_t a = 255;
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+    for (uint32_t i = 0; i < size; i++) {
+        auto color = original[i];
+        if (enableTransparentColor) {
+            a = static_cast<uint8_t>((color >> 24) & 0xff);
+            if (!hasTransparentColor) {
+                if ((ignoreTranslucency && a != 255) || (!ignoreTranslucency && a == 0)) {
+                    hasTransparentColor = true;
+                }
+            }
+        }
+        b = static_cast<uint8_t>((color >> 16) & 0xff);
+        g = static_cast<uint8_t>((color >> 8) & 0xff);
+        r = static_cast<uint8_t>(color & 0xff);
+        if (a == 255 || (!ignoreTranslucency && a != 0)) {
+            quantizeIn.emplace_back(a, r, g, b, i);
+        }
     }
-    Logger::log(debugLog, quantizerStr + " size is " + Logger::toString(quantizerSize));
 
-    if (quantizerSize <= 0) {
+    std::vector<ARGB> quantizeOut;
+    quantizeOut.reserve(256);
+    int quantizeSize = 0;
+    if (size > 256) {
+        quantizeSize = colorQuantizer->quantize(quantizeIn, hasTransparentColor ? 255 : 256,
+                                                quantizeOut);
+    } else {
+        quantizeSize = size;
+        quantizeOut.assign(quantizeIn.begin(), quantizeIn.end());
+    }
+    Logger::log(debugLog, quantizerStr + " size is " + Logger::toString(quantizeSize));
+
+    if (quantizeSize <= 0) {
         return content;
     }
 
-    //    int32_t paddedColorCount = GifBlockWriter::paddedSize(quantizerSize);
-    int32_t paddedColorCount = 256;
-    GifBlockWriter::writeGraphicsControlExtensionBlock(content, 0, false, false, delay / 10, 0);
-    GifBlockWriter::writeImageDescriptorBlock(content, left, top, screenWidth, screenHeight, true,
-                                              false,
-                                              false,
-                                              getColorTableSizeField(paddedColorCount));
-    GifBlockWriter::writeColorTable(content, quantizerPixels, quantizerSize, paddedColorCount);
+    uint8_t transparentColorR = 0;
+    uint8_t transparentColorG = 0;
+    uint8_t transparentColorB = 0;
+    if (hasTransparentColor) {
+        std::mt19937 generator((uint32_t) time(nullptr));
+        std::uniform_int_distribution<uint32_t> sizeDis(0, size);
+        std::uniform_int_distribution<uint32_t> rgbDis(0, 255);
+        int tryCount = 0;
+        while (tryCount < 12) {
+            uint32_t random = sizeDis(generator);
+            if (tryCount >= 6) {
+                transparentColorR = static_cast<uint8_t>(rgbDis(generator));
+                transparentColorG = static_cast<uint8_t>(rgbDis(generator));
+                transparentColorB = static_cast<uint8_t>(rgbDis(generator));
+            } else {
+                transparentColorR = quantizeIn[random].r;
+                transparentColorG = quantizeIn[random].g;
+                transparentColorB = quantizeIn[random].b;
+            }
+            int repeatCount = 0;
+            for (int i = 0; i < quantizeSize; i++) {
+                auto qColor = quantizeOut[i];
+                if (transparentColorR == qColor.r && transparentColorG == qColor.g &&
+                    transparentColorB == qColor.b) {
+                    break;
+                } else {
+                    repeatCount++;
+                }
+            }
+            if (repeatCount == quantizeSize) {
+                break;
+            }
+            tryCount++;
+        }
+        if (dType == DitherType::FloydSteinberg) {
+            dType = DitherType::Bayer;
+        }
+    }
 
-    unique_ptr<Ditherer> ditherer;
-    unique_ptr<uint8_t[]> colorIndices(new uint8_t[pixelCount]);
-    string dithererStr;
+    //    int32_t paddedColorCount = GifBlockWriter::paddedSize(quantizeSize);
+    int32_t paddedColorCount = 256;
+    auto transparentColorIndex = static_cast<int32_t>(quantizeSize + 1);
+    GifBlockWriter::writeGraphicsControlExtensionBlock(content, 0, false, hasTransparentColor,
+                                                       delay / 10,
+                                                       hasTransparentColor ? transparentColorIndex
+                                                                           : 0);
+    GifBlockWriter::writeImageDescriptorBlock(content, left, top, screenWidth, screenHeight, true,
+                                              false, false,
+                                              getColorTableSizeField(paddedColorCount));
+    GifBlockWriter::writeColorTableEntity(content, quantizeOut, paddedColorCount);
+
+    std::unique_ptr<Ditherer> ditherer;
+    std::string dithererStr;
 
 #if defined(__RenderScript__)
     bool useRenderScript = false;
@@ -161,8 +228,8 @@ vector<uint8_t> GifEncoder::addImage(uint32_t *originalColors, uint32_t delay,
             useRenderScript = true;
         }
     }
-    switch (ditherType) {
-        case DitherType::NO:
+    switch (dType) {
+        case DitherType::No:
             if (useRenderScript) {
                 ditherer.reset(new NoDithererWithRs());
                 dithererStr = "NoDithererWithRs";
@@ -192,32 +259,36 @@ vector<uint8_t> GifEncoder::addImage(uint32_t *originalColors, uint32_t delay,
             break;
     }
 #else
-    switch (ditherType) {
-        case DitherType::NO:
-            ditherer.reset(new NoDitherer());
+    switch (dType) {
+        case DitherType::No:
+            ditherer = std::make_unique<NoDitherer>();
             dithererStr = "NoDitherer";
             break;
         case DitherType::M2:
-            ditherer.reset(new M2Ditherer());
+            ditherer = std::make_unique<M2Ditherer>();
             dithererStr = "M2Ditherer";
             break;
         case DitherType::Bayer:
-            ditherer.reset(new BayerDitherer());
+            ditherer = std::make_unique<BayerDitherer>();
             dithererStr = "BayerDitherer";
             break;
         case DitherType::FloydSteinberg:
-            ditherer.reset(new FloydSteinbergDitherer());
+            ditherer = std::make_unique<FloydSteinbergDitherer>();
             dithererStr = "FloydSteinbergDitherer";
             break;
     }
 #endif
+
+    ditherer->width = screenWidth;
+    ditherer->height = screenHeight;
+    auto colorIndices = new uint8_t[size];
 
 #if defined(__RenderScript__)
     if (useRenderScript) {
         static_cast<DithererWithRs *>(ditherer.get())->dither(pixels, screenWidth, screenHeight,
                                                               quantizerPixels, quantizerSize,
                                                               colorIndices.get(), rs);
-    } else if (quantizerType == QuantizerType::Octree && ditherType == DitherType::NO) {
+    } else if (qType == QuantizerType::Octree && dType == DitherType::No) {
         static_cast<OctreeQuantizer *>(colorQuantizer.get())->getColorIndices(pixels,
                                                                               colorIndices.get(),
                                                                               pixelCount, nullptr);
@@ -226,25 +297,32 @@ vector<uint8_t> GifEncoder::addImage(uint32_t *originalColors, uint32_t delay,
                          colorIndices.get());
     }
 #else
-    if (quantizerType == QuantizerType::Octree && ditherType == DitherType::NO) {
-        static_cast<OctreeQuantizer *>(colorQuantizer.get())->getColorIndices(pixels,
-                                                                              colorIndices.get(),
-                                                                              pixelCount, nullptr);
+    if (qType == QuantizerType::Octree && dType == DitherType::No && !hasTransparentColor) {
+        static_cast<OctreeQuantizer *>(colorQuantizer.get())->getColorIndices(quantizeIn,
+                                                                              colorIndices);
     } else {
-        ditherer->dither(pixels, screenWidth, screenHeight, quantizerPixels, quantizerSize,
-                         colorIndices.get());
+        ditherer->dither(quantizeIn, quantizeOut, colorIndices);
     }
 #endif
+
+    if (hasTransparentColor) {
+        GifBlockWriter::writeColorTableTransparency(content, transparentColorR, transparentColorG,
+                                                    transparentColorB);
+        GifBlockWriter::writeColorTableUnpadded(content, transparentColorIndex, paddedColorCount);
+    } else {
+        GifBlockWriter::writeColorTableUnpadded(content, quantizeSize, paddedColorCount);
+    }
 
     Logger::log(debugLog, dithererStr);
 
     LzwEncoder lzwEncoder(paddedColorCount);
-    lzwEncoder.encode(colorIndices.get(), screenWidth, screenHeight, content);
+    lzwEncoder.encode(colorIndices, screenWidth, screenHeight, content);
+    delete[] colorIndices;
     Logger::log(debugLog, "LZW encode");
     return content;
 }
 
-void GifEncoder::flush(vector<uint8_t> &content) {
+void GifEncoder::flush(const std::vector<uint8_t> &content) {
     size_t size = content.size();
     for (int i = 0; i < size; ++i) {
         outfile.write((char *) (&content[i]), 1);

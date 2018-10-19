@@ -19,8 +19,7 @@ namespace blk {
 
         virtual ~ColorQuantizer() = default;;
 
-        virtual int32_t
-        quantize(RGB *pixels, uint32_t pixelCount, uint32_t maxColorCount, RGB out[])= 0;
+        virtual int32_t quantize(const std::vector<ARGB> &in, uint32_t maxColorCount, std::vector<ARGB> &out)= 0;
 
     protected:
 

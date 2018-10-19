@@ -6,7 +6,6 @@
 #include "FloydSteinbergDitherer.h"
 #include "KDTree.h"
 
-using namespace std;
 using namespace blk;
 
 static const int8_t ERROR_COMPONENT_SIZE = 4;
@@ -14,14 +13,14 @@ static const float ERROR_COMPONENT_DELTA_X[] = {1.0f, -1.0f, 0.0f, 1.0f};
 static const float ERROR_COMPONENT_DELTA_Y[] = {0.0f, 1.0f, 1.0f, 1.0f};
 static const float ERROR_COMPONENT_FACTION[] = {7.0f / 16.0f, 3.0f / 16.0f, 5.0f / 16.0f, 1.0f / 16.0f};
 
-void FloydSteinbergDitherer::dither(RGB *originPixels, uint16_t width, uint16_t height,
-                                    RGB quantizerPixels[], int32_t quantizerSize,
-                                    uint8_t *colorIndices) {
+void FloydSteinbergDitherer::dither(std::vector<ARGB> &origin, std::vector<ARGB> &quantize, uint8_t *colorIndices) {
     int32_t totalSize = width * height;
     KDTree kdTree;
     KDTree::Node rootNode;
-    kdTree.createKDTree(&rootNode, quantizerPixels, 0, quantizerSize - 1, 0);
-    RGB target;
+    size_t quantizeSize = quantize.size();
+    auto end = static_cast<uint8_t>(quantizeSize - 1);
+    kdTree.createKDTree(&rootNode, quantize, 0, end, 0);
+
     uint8_t nearestCentroidR = 0;
     uint8_t nearestCentroidG = 0;
     uint8_t nearestCentroidB = 0;
@@ -34,7 +33,7 @@ void FloydSteinbergDitherer::dither(RGB *originPixels, uint16_t width, uint16_t 
     int position = 0;
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
-            auto rgb = originPixels[position];
+            auto rgb = origin[position];
             r = rgb.r;
             g = rgb.g;
             b = rgb.b;
@@ -42,19 +41,16 @@ void FloydSteinbergDitherer::dither(RGB *originPixels, uint16_t width, uint16_t 
                 lastR = r;
                 lastG = g;
                 lastB = b;
-                target.r = r;
-                target.g = g;
-                target.b = b;
-                kdTree.searchNNNoBacktracking(&rootNode, target, -1);
+                kdTree.searchNoBacktracking(&rootNode, r, g, b, -1);
             }
 
             nearestCentroidR = kdTree.nearest.r;
             nearestCentroidG = kdTree.nearest.g;
             nearestCentroidB = kdTree.nearest.b;
 
-            originPixels[position].r = nearestCentroidR;
-            originPixels[position].g = nearestCentroidG;
-            originPixels[position].b = nearestCentroidB;
+            origin[position].r = nearestCentroidR;
+            origin[position].g = nearestCentroidG;
+            origin[position].b = nearestCentroidB;
 
             position++;
 
@@ -72,22 +68,22 @@ void FloydSteinbergDitherer::dither(RGB *originPixels, uint16_t width, uint16_t 
                     float errorComponentB = errorB * ERROR_COMPONENT_FACTION[directionId];
 
                     int ditherPosition = siblingY * width + siblingX;
-                    auto siblingRgb = originPixels[ditherPosition];
+                    auto siblingRgb = origin[ditherPosition];
 
                     auto siblingR = static_cast<int32_t >(siblingRgb.r + errorComponentR);
                     auto siblingG = static_cast<int32_t>(siblingRgb.g + errorComponentG);
                     auto siblingB = static_cast<int32_t>(siblingRgb.b + errorComponentB);
 
-                    originPixels[ditherPosition].r = static_cast<uint8_t>(min(255, max(0, siblingR)));
-                    originPixels[ditherPosition].g = static_cast<uint8_t>(min(255, max(0, siblingG)));
-                    originPixels[ditherPosition].b = static_cast<uint8_t>(min(255, max(0, siblingB)));
+                    origin[ditherPosition].r = static_cast<uint8_t>(std::min(255, std::max(0, siblingR)));
+                    origin[ditherPosition].g = static_cast<uint8_t>(std::min(255, std::max(0, siblingG)));
+                    origin[ditherPosition].b = static_cast<uint8_t>(std::min(255, std::max(0, siblingB)));
                 }
             }
         }
     }
     for (int i = 0; i < totalSize; ++i) {
-        auto rgb = originPixels[i];
-        kdTree.searchNNNoBacktracking(&rootNode, rgb, -1);
+        auto rgb = origin[i];
+        kdTree.searchNoBacktracking(&rootNode, rgb.r, rgb.g, rgb.b, -1);
         colorIndices[i] = kdTree.nearest.index;
     }
     kdTree.freeKDTree(&rootNode);

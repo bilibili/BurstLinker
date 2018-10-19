@@ -5,25 +5,24 @@
 #include <algorithm>
 #include "KDTree.h"
 
-using namespace std;
 using namespace blk;
 
 // euclideanDistance
 // int distance = nr * nr + ng * ng + nb * nb;
 // manhattanDistance
 // int distance = abs(nr) + abs(ng) + abs(nb);
-int calculateDist(KDTree::Node *node, RGB target) {
+int calculateDist(KDTree::Node *node, uint8_t r, uint8_t g, uint8_t b) {
     int tmp = 0;
-    int diff = node->r - target.r;
+    int diff = node->r - r;
     tmp += (diff * diff) << 1;
-    diff = node->g - target.g;
+    diff = node->g - g;
     tmp += (diff * diff) << 2;
-    diff = node->b - target.b;
+    diff = node->b - b;
     tmp += (diff * diff) * 3;
     return tmp;
 }
 
-uint8_t getDimension(RGB rgb[], int start, int end) {
+uint8_t getDimension(const std::vector<ARGB> &rgb, int start, int end) {
     int dataSize = end - start + 1;
     if (dataSize <= 0) {
         return 0;
@@ -68,7 +67,7 @@ uint8_t getDimension(RGB rgb[], int start, int end) {
     return dimension;
 }
 
-void *KDTree::createKDTree(Node *node, RGB rgb[], int32_t start, int32_t end, uint8_t split) {
+void *KDTree::createKDTree(Node *node, std::vector<ARGB> &rgb, int32_t start, int32_t end, uint8_t split) {
     int size = end - start + 1;
     if (size <= 0) {
         return nullptr;
@@ -85,7 +84,7 @@ void *KDTree::createKDTree(Node *node, RGB rgb[], int32_t start, int32_t end, ui
         return node;
     }
 
-    sort(rgb + start, rgb + end, Compare(split));
+    std::sort(rgb.begin() + start, rgb.begin() + end, Compare(split));
 
     int splitSize = size / 2;
     int leftStart = start;
@@ -113,41 +112,41 @@ void *KDTree::createKDTree(Node *node, RGB rgb[], int32_t start, int32_t end, ui
     return node;
 }
 
-int KDTree::searchNNNoBacktracking(KDTree::Node *node, RGB target, int32_t dis) {
+int KDTree::searchNoBacktracking(KDTree::Node *node, uint8_t r, uint8_t g, uint8_t b, int32_t dis) {
     if (node == nullptr) {
         return dis;
     }
     if (node->left == nullptr && node->right == nullptr) {
         if (dis < 0) {
             nearest = *node;
-            dis = calculateDist(node, target);
+            dis = calculateDist(node, r, g, b);
             return dis;
         }
     }
     bool comp = false;
     switch (node->split) {
         case 0:
-            comp = node->r <= target.r;
+            comp = node->r <= r;
             break;
         case 1:
-            comp = node->g <= target.g;
+            comp = node->g <= g;
             break;
         case 2:
-            comp = node->b <= target.b;
+            comp = node->b <= b;
             break;
         default:
             break;
     }
     if (comp) {
-        dis = searchNNNoBacktracking(node->left, target, dis);
-        int tmp = calculateDist(node, target);
+        dis = searchNoBacktracking(node->left, r, g, b, dis);
+        int tmp = calculateDist(node, r, g, b);
         if (tmp < dis || dis == -1) {
             nearest = *node;
             dis = tmp;
         }
     } else {
-        dis = searchNNNoBacktracking(node->right, target, dis);
-        int tmp = calculateDist(node, target);
+        dis = searchNoBacktracking(node->right, r, g, b, dis);
+        int tmp = calculateDist(node, r, g, b);
         if (tmp < dis || dis == -1) {
             nearest = *node;
             dis = tmp;

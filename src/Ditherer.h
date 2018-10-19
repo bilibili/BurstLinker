@@ -25,12 +25,13 @@ namespace blk {
         // only for bayer
         int bayerScale = 1;
 
+        uint16_t width;
+
+        uint16_t height;
+
         virtual ~Ditherer() = default;
 
-        virtual void
-        dither(RGB *originPixels, uint16_t width, uint16_t height,
-               RGB quantizerPixels[], int32_t quantizerSize,
-               uint8_t *colorIndices) = 0;
+        virtual void dither(std::vector<ARGB> &origin, std::vector<ARGB> &quantize, uint8_t *colorIndices) = 0;
 
     };
 

@@ -7,22 +7,21 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 
-#include "../thirdpart/stb_image.h"
+#include "../third_part/stb_image.h"
 
-using namespace std;
 using namespace blk;
 
 long long currentTimeMs() {
-    chrono::time_point<chrono::system_clock, chrono::milliseconds> tp = chrono::time_point_cast<chrono::milliseconds>(
-            chrono::system_clock::now());
-    auto tmp = chrono::duration_cast<chrono::milliseconds>(tp.time_since_epoch());
+    std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds> tp = std::chrono::time_point_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now());
+    auto tmp = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch());
     auto timestamp = tmp.count();
     return timestamp;
 }
 
 int main(int argc, char *argv[]) {
     QuantizerType quantizerType = QuantizerType::Octree;
-    DitherType ditherType = DitherType::NO;
+    DitherType ditherType = DitherType::No;
     int delay = 0;
     const char *fileName = nullptr;
 
@@ -50,7 +49,7 @@ int main(int argc, char *argv[]) {
         }
         char *dt = argv[startPosition];
         if (!strcmp(dt, "-d0")) {
-            ditherType = DitherType::NO;
+            ditherType = DitherType::No;
             startPosition++;
         } else if (!strcmp(dt, "-d1")) {
             ditherType = DitherType::M2;
@@ -64,65 +63,66 @@ int main(int argc, char *argv[]) {
         }
         delay = atol(argv[startPosition]);
         if (delay <= 0) {
-            cout << "Delay time is too short" << endl;
+            std::cout << "Delay time is too short" << std::endl;
             return 0;
         }
         startPosition++;
         fileName = argv[startPosition];
     } else {
-        cout << "Missing input parameters" << endl;
+        std::cout << "Missing input parameters" << std::endl;
         return 0;
     }
 
     int width, height, n;
     unsigned char *data = stbi_load(fileName, &width, &height, &n, 0);
     if (!data) {
-        cout << "Image load failed" << endl;
+        std::cout << "Image load failed" << std::endl;
         stbi_image_free(data);
         return 0;
     }
     int imageSize = width * height;
     if (width >= 65536 || height >= 65536) {
-        cout << "Image is too large " << width * height << endl;
+        std::cout << "Image is too large " << width * height << std::endl;
         stbi_image_free(data);
         return 0;
     }
 
     BurstLinker burstLinker;
     if (!burstLinker.init("out.gif", width, height, 0, 4)) {
-        cout << "GifEncoder init fail" << endl;
+        std::cout << "GifEncoder init fail" << std::endl;
         stbi_image_free(data);
         return 0;
     }
 
     long long currentTime = currentTimeMs();
-    cout << "Start" << endl;
+    std::cout << "Start" << std::endl;
 
-    vector<uint32_t *> imagePixels;
+    std::vector<std::vector<uint32_t >> tasks;
+    int enableTransparency = 0;
     for (int i = startPosition; i < argc; ++i) {
         const char *processFileName = argv[i];
         int processWidth, processHeight, processN;
         unsigned char *processImage = stbi_load(processFileName, &processWidth, &processHeight, &processN, 0);
         if (!processImage) {
-            cout << "Image load failed " << processFileName << endl;
+            std::cout << "Image load failed " << processFileName << std::endl;
             stbi_image_free(processImage);
             return 0;
         }
         if (processWidth != width || processHeight != height) {
-            cout << "Image is not the same width or height " << processFileName << endl;
+            std::cout << "Image is not the same width or height " << processFileName << std::endl;
             stbi_image_free(processImage);
             return 0;
         }
         if (imageSize < width || imageSize < height) {
-            cout << "C6386 " << processFileName << endl;
+            std::cout << "C6386 " << processFileName << std::endl;
             stbi_image_free(processImage);
             return 0;
         }
-        auto *imagePixel = new uint32_t[imageSize];
-        memset(imagePixel, 0, imageSize * sizeof(uint32_t));
 
-        int pixelIndex = 0;
+        std::vector<uint32_t> image;
+        image.reserve(width * height);
         int index = 0;
+        int a = 255;
         int r = 0;
         int g = 0;
         int b = 0;
@@ -133,26 +133,29 @@ int main(int argc, char *argv[]) {
                     g = processImage[index++];
                     b = processImage[index++];
                 } else if (n == 4) {
-                    r = processImage[index++];
-                    g = processImage[index++];
-                    b = processImage[index++];
-                    index++;
+                    r = data[index++];
+                    g = data[index++];
+                    b = data[index++];
+                    a = data[index++];
                 } else {
-					cout << "Unsupported images" << endl;
+                    std::cout << "Unsupported images" << std::endl;
                     return 0;
                 }
-                int bgr = b << 16 | g << 8 | r;
-                imagePixel[pixelIndex++] = static_cast<uint32_t>(bgr);
+                if (enableTransparency == 0) {
+                    enableTransparency = (n == 4 ? 1 : 0);
+                }
+                image.push_back(a << 24 | b << 16 | g << 8 | r);
             }
         }
         stbi_image_free(processImage);
-        imagePixels.emplace_back(imagePixel);
+        tasks.push_back(image);
     }
-
-    burstLinker.connect(imagePixels, delay, quantizerType, ditherType, 0, 0);
+    int ignoreTranslucency = 0;
+    int transparencyOption = ignoreTranslucency << 8 | enableTransparency;
+    burstLinker.connect(tasks, delay, quantizerType, ditherType, transparencyOption, 0, 0);
 
     long long diff = currentTimeMs() - currentTime;
-    cout << "End " << diff << "ms" << endl;
+    std::cout << "End " << diff << "ms" << std::endl;
 
     burstLinker.release();
     stbi_image_free(data);

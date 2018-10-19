@@ -13,10 +13,7 @@ namespace blk {
 
     public:
 
-        void
-        dither(RGB *originPixels, uint16_t width, uint16_t height,
-               RGB quantizerPixels[], int32_t quantizerSize,
-               uint8_t *colorIndices) override;
+        void dither(std::vector<ARGB> &origin, std::vector<ARGB> &quantize, uint8_t *colorIndices) override;
 
     };
 

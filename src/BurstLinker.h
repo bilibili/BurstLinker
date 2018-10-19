@@ -14,17 +14,15 @@ namespace blk {
 
     public:
 
-        ~BurstLinker();
-
         bool init(const char *path, uint16_t width, uint16_t height, uint32_t loopCount,
                   uint32_t threadNum);
 
-        bool connect(uint32_t *imagePixels, uint32_t delay,
-                     QuantizerType quantizerType, DitherType ditherType,
+        bool connect(std::vector<uint32_t> &image, uint32_t delay,
+                     QuantizerType quantizerType, DitherType ditherType, int32_t transparencyOption,
                      uint16_t left, uint16_t top);
 
-        bool connect(std::vector<uint32_t *> imagePixels, uint32_t delay,
-                     QuantizerType quantizerType, DitherType ditherType,
+        bool connect(std::vector<std::vector<uint32_t >> &images, uint32_t delay,
+                     QuantizerType quantizerType, DitherType ditherType, int32_t transparencyOption,
                      uint16_t left, uint16_t top);
 
         void release();
@@ -33,7 +31,7 @@ namespace blk {
 
     private:
 
-        GifEncoder *gifEncoder = nullptr;
+        std::unique_ptr<GifEncoder> gifEncoder;
 
     };
 

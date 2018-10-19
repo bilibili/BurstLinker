@@ -32,6 +32,8 @@ public class BurstLinker {
 
     private String mUseRenderScript;
 
+    private int mIgnoreTranslucency = 0;
+
     private int mWidth;
     private int mHeight;
     private int mThreadCount;
@@ -41,10 +43,10 @@ public class BurstLinker {
 
     private native long jniDebugLog(long gifEncoder, boolean debug);
 
-    private native String jniConnect(long gifEncoder, int quantizerType, int ditherType,
+    private native String jniConnect(long gifEncoder, int quantizerType, int ditherType, int ignoreTranslucency,
                                      int left, int top, int delayMs, String cacheDir, Bitmap bitmap);
 
-    private native String jniConnectArray(long gifEncoder, int quantizerType, int ditherType,
+    private native String jniConnectArray(long gifEncoder, int quantizerType, int ditherType, int ignoreTranslucency,
                                           int left, int top, int delayMs, String cacheDir, Bitmap[] bitmaps);
 
     private native void jniRelease(long gifEncoder);
@@ -70,7 +72,7 @@ public class BurstLinker {
     }
 
     /**
-     * @param loopCount 0 repeat forever
+     * @param loopCount 0 = repeat forever
      * @param context   use for enable renderScript
      */
     private void init(int width, int height, String path, int loopCount, int threadCount, Context context) throws GifEncodeException {
@@ -99,12 +101,16 @@ public class BurstLinker {
         mThreadCount = threadCount;
         mNative = jniInit(path, width, height, loopCount, threadCount);
         if (mNative == 0) {
-            throw new GifEncodeException("init aborted!!! WTF");
+            throw new GifEncodeException("miao miao miao !!! init aborted");
         }
     }
 
     public void debugLog(boolean debug) {
         jniDebugLog(mNative, debug);
+    }
+
+    public void setIgnoreTranslucency(boolean ignoreTranslucency) {
+        mIgnoreTranslucency = ignoreTranslucency ? 1 : 0;
     }
 
     public void connect(Bitmap bitmap, int quantizerType, int ditherType, int delayMs) throws GifEncodeException {
@@ -116,7 +122,7 @@ public class BurstLinker {
      */
     public void connect(Bitmap bitmap, int quantizerType, int ditherType, int left, int top, int delayMs) throws GifEncodeException {
         if (mNative == 0) {
-            throw new GifEncodeException("please first initialization");
+            throw new GifEncodeException("please initialize first");
         }
         if (bitmap == null) {
             throw new GifEncodeException("bitmap is null");
@@ -127,18 +133,18 @@ public class BurstLinker {
         if (left + bitmap.getWidth() > mWidth || top + bitmap.getHeight() > mHeight) {
             throw new GifEncodeException("image does not fit in screen");
         }
-        String nativeMessage = jniConnect(mNative, quantizerType, ditherType, left, top,
+        String nativeMessage = jniConnect(mNative, quantizerType, ditherType, mIgnoreTranslucency, left, top,
                 delayMs, mUseRenderScript, bitmap);
         if (!TextUtils.isEmpty(nativeMessage)) {
             throw new GifEncodeException("native -> " + nativeMessage);
         }
     }
 
-    public void connectArray(List<Bitmap> bitmaps, int quantizerType, int ditherType, int delayMs) throws GifEncodeException {
-        connectArray(bitmaps, quantizerType, ditherType, 0, 0, delayMs);
+    public void connect(List<Bitmap> bitmaps, int quantizerType, int ditherType, int delayMs) throws GifEncodeException {
+        connect(bitmaps, quantizerType, ditherType, 0, 0, delayMs);
     }
 
-    public void connectArray(List<Bitmap> bitmaps, int quantizerType, int ditherType, int left, int top, int delayMs) throws GifEncodeException {
+    public void connect(List<Bitmap> bitmaps, int quantizerType, int ditherType, int left, int top, int delayMs) throws GifEncodeException {
         if (mNative == 0) {
             throw new GifEncodeException("please first initialization");
         }
@@ -156,7 +162,7 @@ public class BurstLinker {
         String nativeMessage;
         if (mThreadCount <= 1) {
             for (Bitmap bitmap : bitmaps) {
-                nativeMessage = jniConnect(mNative, quantizerType, ditherType, left, top,
+                nativeMessage = jniConnect(mNative, quantizerType, ditherType, mIgnoreTranslucency, left, top,
                         delayMs, mUseRenderScript, bitmap);
                 if (!TextUtils.isEmpty(nativeMessage)) {
                     throw new GifEncodeException("native -> " + nativeMessage);
@@ -166,9 +172,9 @@ public class BurstLinker {
             Bitmap[] bitmapArray;
             int bitmapSize = bitmaps.size();
             if (mThreadCount > bitmapSize) {
-                bitmapArray = bitmaps.toArray(new Bitmap[bitmapSize]);
-                nativeMessage = jniConnectArray(mNative, quantizerType, ditherType, left, top,
-                        delayMs, mUseRenderScript, bitmapArray);
+                bitmapArray = bitmaps.toArray(new Bitmap[0]);
+                nativeMessage = jniConnectArray(mNative, quantizerType, ditherType, mIgnoreTranslucency,
+                        left, top, delayMs, mUseRenderScript, bitmapArray);
                 if (!TextUtils.isEmpty(nativeMessage)) {
                     throw new GifEncodeException("native -> " + nativeMessage);
                 }
@@ -185,9 +191,9 @@ public class BurstLinker {
                         end = start + remain;
                     }
                     List<Bitmap> processBitmaps = bitmaps.subList(start, end);
-                    bitmapArray = processBitmaps.toArray(new Bitmap[processBitmaps.size()]);
-                    nativeMessage = jniConnectArray(mNative, quantizerType, ditherType, left, top,
-                            delayMs, mUseRenderScript, bitmapArray);
+                    bitmapArray = processBitmaps.toArray(new Bitmap[0]);
+                    nativeMessage = jniConnectArray(mNative, quantizerType, ditherType, mIgnoreTranslucency,
+                            left, top, delayMs, mUseRenderScript, bitmapArray);
                     if (!TextUtils.isEmpty(nativeMessage)) {
                         throw new GifEncodeException("native -> " + nativeMessage);
                     }
@@ -197,7 +203,10 @@ public class BurstLinker {
     }
 
     public void release() {
-        jniRelease(mNative);
+        if (mNative == 0) {
+            return;
+        }
+//        jniRelease(mNative);
         mNative = 0;
     }
 }

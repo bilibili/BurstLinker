@@ -63,17 +63,20 @@ void NeuQuant::unbiasnet() {
 }
 
 /* Output colour dither */
-int NeuQuant::getColourMap(RGB out[]) {
+int NeuQuant::getColourMap(std::vector<ARGB> &out, uint32_t maxColorCount) {
     int index[netsize];
     for (int i = 0; i < netsize; i++) {
         index[network[i][3]] = i;
     }
     int k = 0;
     for (int j : index) {
-        out[k].r = static_cast<uint8_t>(network[j][0]);
-        out[k].g = static_cast<uint8_t>(network[j][1]);
-        out[k].b = static_cast<uint8_t>(network[j][2]);
-        out[k].index = static_cast<uint8_t>(k);
+        if (k >= maxColorCount) {
+            return k;
+        }
+        auto r = static_cast<uint8_t>(network[j][0]);
+        auto g = static_cast<uint8_t>(network[j][1]);
+        auto b = static_cast<uint8_t>(network[j][2]);
+        out.emplace_back(r, g, b, k);
         k++;
     }
     return k;

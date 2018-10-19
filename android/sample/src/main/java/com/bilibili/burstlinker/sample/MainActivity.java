@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
         mEncodeTv = findViewById(R.id.text);
 
         String dstFile = "result.gif";
-        mFilePath = getCacheDir() + File.separator + dstFile;
+        mFilePath = getExternalCacheDir() + File.separator + dstFile;
 
         mEncodeTv.setOnClickListener(v -> {
             mEncodeTv.setEnabled(false);
@@ -66,13 +66,14 @@ public class MainActivity extends AppCompatActivity {
         Exception exception = null;
         try {
             burstLinker.init(width, height, mFilePath, 0, CPU_COUNT);
+            burstLinker.debugLog(true);
             if (true) {
                 List<Bitmap> bitmaps = new ArrayList<>();
                 bitmaps.add(bitmap);
                 bitmaps.add(bitmap);
                 bitmaps.add(bitmap);
                 size = bitmaps.size();
-                burstLinker.connectArray(bitmaps, BurstLinker.OCTREE_QUANTIZER,
+                burstLinker.connect(bitmaps, BurstLinker.OCTREE_QUANTIZER,
                         BurstLinker.NO_DITHER, 0, 0, delayMs);
             } else {
                 Bitmap colorBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
@@ -113,9 +114,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    /**
-     * it is recommended to use ARGB_8888
-     */
     private Bitmap loadBitmap(int resource) {
         final BitmapFactory.Options options = new BitmapFactory.Options();
         options.inPreferredConfig = Bitmap.Config.ARGB_8888;

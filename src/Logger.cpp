@@ -3,9 +3,6 @@
 //
 
 #include <iostream>
-#include <ctime>
-#include <ratio>
-#include <chrono>
 
 #include "Logger.h"
 
@@ -23,7 +20,6 @@
 
 #endif
 
-using namespace std;
 using namespace blk;
 
 static long long currentTime = 0;
@@ -32,14 +28,14 @@ static long long currentTimeMillis() {
     //struct timeval tv{};
     //gettimeofday(&tv, nullptr);
     //return ((unsigned long long) tv.tv_sec * 1000 + (unsigned long long) tv.tv_usec / 1000);
-    chrono::time_point<chrono::system_clock, chrono::milliseconds> tp = chrono::time_point_cast<chrono::milliseconds>(
-            chrono::system_clock::now());
-    auto tmp = chrono::duration_cast<chrono::milliseconds>(tp.time_since_epoch());
+    std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds> tp = std::chrono::time_point_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now());
+    auto tmp = std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch());
     auto timestamp = tmp.count();
     return timestamp;
 }
 
-void Logger::log(bool show, string str) {
+void Logger::log(bool show, std::string str) {
     if (!show) {
         return;
     }
@@ -50,7 +46,7 @@ void Logger::log(bool show, string str) {
 #if defined(__RenderScript__) || defined(__AndroidLog__)
     LOGI("%s time : %dms", str.c_str(), (int) diff);
 #else
-    cout << str << " - time " << diff << "ms" << endl;
+    std::cout << str << " - time " << diff << "ms" << std::endl;
 #endif
     currentTime = currentTimeMillis();
 }

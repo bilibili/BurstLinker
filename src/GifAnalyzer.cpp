@@ -8,7 +8,6 @@
 #include "GifAnalyzer.h"
 #include "Logger.h"
 
-using namespace std;
 using namespace blk;
 
 static const size_t BUF_SIZE = 1024;

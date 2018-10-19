@@ -14,30 +14,30 @@ cmake_minimum_required(VERSION 3.4.1)
 
 # link_directories(${ANDROID_NDK}/toolchains/renderscript/prebuilt/${ANDROID_HOST_TAG}/platform/${ANDROID_SYSROOT_ABI})
 
-set(srcdir ../../src)
+set(src_dir ../../src)
 
 set(SOURCE_FILES
-    ${srcdir}/GifEncoder.cpp
-    ${srcdir}/GifBlockWriter.cpp
-    ${srcdir}/KDTree.cpp
-    ${srcdir}/LzwEncoder.cpp
-    ${srcdir}/Logger.cpp
+    ${src_dir}/GifEncoder.cpp
+    ${src_dir}/GifBlockWriter.cpp
+    ${src_dir}/KDTree.cpp
+    ${src_dir}/LzwEncoder.cpp
+    ${src_dir}/Logger.cpp
 
-    ${srcdir}/NoDitherer.cpp
-    ${srcdir}/BayerDitherer.cpp
-    ${srcdir}/M2Ditherer.cpp
-    ${srcdir}/FloydSteinbergDitherer.cpp
+    ${src_dir}/NoDitherer.cpp
+    ${src_dir}/BayerDitherer.cpp
+    ${src_dir}/M2Ditherer.cpp
+    ${src_dir}/FloydSteinbergDitherer.cpp
 
-    ${srcdir}/OctreeQuantizer.cpp
-    ${srcdir}/UniformQuantizer.cpp
-    ${srcdir}/KMeansQuantizer.cpp
-    ${srcdir}/MedianCutQuantizer.cpp
-    ${srcdir}/RandomQuantizer.cpp
-    ${srcdir}/NeuQuant.cpp
-    ${srcdir}/NeuQuantQuantizer.cpp
+    ${src_dir}/OctreeQuantizer.cpp
+    ${src_dir}/UniformQuantizer.cpp
+    ${src_dir}/KMeansQuantizer.cpp
+    ${src_dir}/MedianCutQuantizer.cpp
+    ${src_dir}/RandomQuantizer.cpp
+    ${src_dir}/NeuQuant.cpp
+    ${src_dir}/NeuQuantQuantizer.cpp
 
-    # ${srcdir}/GifAnalyzer.h
-    ${srcdir}/ThreadPool.h
+    # ${src_dir}/GifAnalyzer.h
+    ${src_dir}/ThreadPool.h
 
     src/main/cpp/BurstLinker.cpp
     # src/main/cpp/DithererWithRs.cpp

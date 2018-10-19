@@ -5,10 +5,8 @@
 #include <algorithm>
 #include <queue>
 #include <iostream>
-#include <cstring>
 #include "MedianCutQuantizer.h"
 
-using namespace std;
 using namespace blk;
 
 struct Cluster {
@@ -17,13 +15,13 @@ struct Cluster {
     int pixelSize = 0;
     int componentWithLargestSpread = 0;
 
-    static bool cmpR(const RGB &i, const RGB &j) { return (i.r < j.r); }
+    static bool cmpR(const ARGB &i, const ARGB &j) { return (i.r < j.r); }
 
-    static bool cmpG(const RGB &i, const RGB &j) { return (i.g < j.g); }
+    static bool cmpG(const ARGB &i, const ARGB &j) { return (i.g < j.g); }
 
-    static bool cmpB(const RGB &i, const RGB &j) { return (i.b < j.b); }
+    static bool cmpB(const ARGB &i, const ARGB &j) { return (i.b < j.b); }
 
-    bool (*cmp[3])(const RGB &, const RGB &) = {cmpR, cmpG, cmpB};
+    bool (*cmp[3])(const ARGB &, const ARGB &) = {cmpR, cmpG, cmpB};
 
     bool operator<(const Cluster &cluster) const {
         return (pixelSize < cluster.pixelSize);
@@ -35,7 +33,7 @@ struct Cluster {
         pixelSize = end - start;
     }
 
-    int getComponentRSpread(RGB *pixels) {
+    int getComponentRSpread(std::vector<ARGB> &pixels) {
         uint8_t minCount = 0;
         uint8_t maxCount = 0;
         for (int i = start; i < end; i++) {
@@ -46,7 +44,7 @@ struct Cluster {
         return maxCount - minCount;
     }
 
-    int getComponentGSpread(RGB *pixels) {
+    int getComponentGSpread(std::vector<ARGB> &pixels) {
         uint8_t minCount = 0;
         uint8_t maxCount = 0;
         for (int i = start; i < end; i++) {
@@ -57,7 +55,7 @@ struct Cluster {
         return maxCount - minCount;
     }
 
-    int getComponentBSpread(RGB *pixels) {
+    int getComponentBSpread(std::vector<ARGB> &pixels) {
         uint8_t minCount = 0;
         uint8_t maxCount = 0;
         for (int i = start; i < end; i++) {
@@ -68,7 +66,7 @@ struct Cluster {
         return maxCount - minCount;
     }
 
-    void calculateSpread(RGB *pixels) {
+    void calculateSpread(std::vector<ARGB> &pixels) {
         int largestSpread = -1;
         int componentSpread = getComponentRSpread(pixels);
         if (componentSpread > largestSpread) {
@@ -86,85 +84,25 @@ struct Cluster {
         }
     }
 
-    bool split(RGB *pixels, Cluster *cluster1, Cluster *cluster2) {
+    bool split(std::vector<ARGB> &pixels, Cluster *cluster1, Cluster *cluster2) {
         if (pixelSize < 2) {
             return false;
         }
-
-//        std::sort(pixels + start, pixels + end, cmp[componentWithLargestSpread]);
-        switch (componentWithLargestSpread) {
-            case 0:
-                countingSortR(pixels, start, end);
-                break;
-            case 1:
-                countingSortG(pixels, start, end);
-                break;
-            case 2:
-                countingSortB(pixels, start, end);
-                break;
-            default:
-                break;
-        }
-
+        std::sort(pixels.begin() + start, pixels.begin() + end, cmp[componentWithLargestSpread]);
         int medianIndex = (pixelSize + 1) / 2;
         cluster1->setStartAndEnd(start, start + medianIndex);
         cluster2->setStartAndEnd(start + medianIndex, end);
         return true;
     }
-
-    void countingSortR(RGB *a, int start, int end) {
-        vector<RGB> c[256];
-        for (int i = start; i < end; i++) {
-            RGB rgb = a[i];
-            int count = rgb.r;
-            c[count].push_back(rgb);
-        }
-        int index = 0;
-        for (const auto &res : c) {
-            for (const auto out : res) {
-                a[index++] = out;
-            }
-        }
-    }
-
-    void countingSortG(RGB *a, int start, int end) {
-        vector<RGB> c[256];
-        for (int i = start; i < end; i++) {
-            RGB rgb = a[i];
-            int count = rgb.g;
-            c[count].push_back(rgb);
-        }
-        int index = 0;
-        for (const auto &res : c) {
-            for (const auto out : res) {
-                a[index++] = out;
-            }
-        }
-    }
-
-    void countingSortB(RGB *a, int start, int end) {
-        vector<RGB> c[256];
-        for (int i = start; i < end; i++) {
-            RGB rgb = a[i];
-            int count = rgb.b;
-            c[count].push_back(rgb);
-        }
-        int index = 0;
-        for (const auto &res : c) {
-            for (const auto out : res) {
-                a[index++] = out;
-            }
-        }
-    }
 };
 
-int32_t MedianCutQuantizer::quantize(RGB *pixels, uint32_t pixelCount, uint32_t maxColorCount, RGB out[]) {
+int32_t MedianCutQuantizer::quantize(const std::vector<ARGB> &in, uint32_t maxColorCount, std::vector<ARGB> &out) {
+    size_t pixelCount = in.size();
     std::priority_queue<Cluster> clusters;
     Cluster cluster;
     cluster.setStartAndEnd(0, pixelCount);
     clusters.push(cluster);
-    auto *sortPixels = new RGB[pixelCount];
-    memcpy(sortPixels, pixels, pixelCount * sizeof(RGB));
+    std::vector<ARGB> sortPixels(in);
     for (uint32_t k = 0; k < maxColorCount - 1; ++k) {
         Cluster top, cluster1, cluster2;
         top = clusters.top();
@@ -192,12 +130,11 @@ int32_t MedianCutQuantizer::quantize(RGB *pixels, uint32_t pixelCount, uint32_t 
             sumG += sortPixels[j].g;
             sumB += sortPixels[j].b;
         }
-        out[index].r = static_cast<uint8_t>(sumR / top.pixelSize);
-        out[index].g = static_cast<uint8_t>(sumG / top.pixelSize);
-        out[index].b = static_cast<uint8_t>(sumB / top.pixelSize);
-        out[index].index = static_cast<uint8_t>(index);
+        auto r = static_cast<uint8_t>(sumR / top.pixelSize);
+        auto g = static_cast<uint8_t>(sumG / top.pixelSize);
+        auto b = static_cast<uint8_t>(sumB / top.pixelSize);
+        out.emplace_back(r, g, b, index);
         index++;
     }
-    delete[] sortPixels;
     return resultSize;
 }

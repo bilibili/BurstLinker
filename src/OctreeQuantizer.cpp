@@ -5,7 +5,6 @@
 #include <cstring>
 #include <cstdint>
 #include <iostream>
-#include <algorithm>
 #include "OctreeQuantizer.h"
 
 using namespace blk;
@@ -19,11 +18,9 @@ void OctreeQuantizer::reduceTree() {
     uint32_t blueSum = 0;
     uint32_t pixelCount = 0;
 
-    // Find the deepest level containing at least one reducible node
     for (i = 7; (i > 0) && (nodeList[i] == nullptr); i--) {
     };
 
-    // Reduce the node most recently added to the list at level i
     Node *tmpNode = nodeList[i];
     nodeList[i] = tmpNode->next;
 
@@ -62,27 +59,27 @@ OctreeQuantizer::Node *OctreeQuantizer::createNode(int inLevel) {
     return node;
 }
 
-bool OctreeQuantizer::addColor(Node *node, uint32_t r, uint32_t g, uint32_t b, int level) {
+bool OctreeQuantizer::addColor(Node **node, uint32_t r, uint32_t g, uint32_t b, int level) {
     int index, shift;
 
-    if (node == nullptr) {
-        node = createNode(level);
+    if (*node == nullptr) {
+        *node = createNode(level);
     }
-    if (node == nullptr) {
+    if (*node == nullptr) {
         return false;
     }
 
-    if (node->isLeaf) {
-        node->pixelCount++;
-        node->rSum += r;
-        node->gSum += g;
-        node->bSum += b;
+    if ((*node)->isLeaf) {
+        (*node)->pixelCount++;
+        (*node)->rSum += r;
+        (*node)->gSum += g;
+        (*node)->bSum += b;
     } else {
         shift = 7 - level;
         index = (((r & mask[level]) >> shift) << 2)
                 | (((g & mask[level]) >> shift) << 1)
                 | ((b & mask[level]) >> shift);
-        if (!addColor(node->child[index], r, g, b, level + 1)) {
+        if (!addColor(&((*node)->child[index]), r, g, b, level + 1)) {
             return false;
         }
     }
@@ -107,7 +104,7 @@ int32_t OctreeQuantizer::getColorIndex(uint8_t r, uint8_t g, uint8_t b) const {
     return currentTree->colorIndex;
 }
 
-void OctreeQuantizer::getColorPalette(Node *tree, int32_t &inIndex, RGB out[]) {
+void OctreeQuantizer::getColorPalette(Node *tree, int32_t &inIndex, std::vector<ARGB> &out) {
     if (tree == nullptr) {
         return;
     }
@@ -119,10 +116,10 @@ void OctreeQuantizer::getColorPalette(Node *tree, int32_t &inIndex, RGB out[]) {
             tree->pixelCount = 1;
         }
         tree->colorIndex = static_cast<uint8_t>(inIndex);
-        out[inIndex].r = static_cast<uint8_t>(tree->rSum);
-        out[inIndex].g = static_cast<uint8_t>(tree->gSum);
-        out[inIndex].b = static_cast<uint8_t>(tree->bSum);
-        out[inIndex].index = static_cast<uint8_t>(inIndex);
+        auto r = static_cast<uint8_t>(tree->rSum);
+        auto g = static_cast<uint8_t>(tree->gSum);
+        auto b = static_cast<uint8_t>(tree->bSum);
+        out.emplace_back(r, g, b, inIndex);
         inIndex++;
     } else {
         for (auto &i : tree->child) {
@@ -151,27 +148,24 @@ OctreeQuantizer::~OctreeQuantizer() {
     leafCount = 0;
 }
 
-int32_t
-OctreeQuantizer::quantize(RGB *pixels, uint32_t pixelCount, uint32_t maxColorCount, RGB out[]) {
+int32_t OctreeQuantizer::quantize(const std::vector<ARGB> &in, uint32_t maxColorCount, std::vector<ARGB> &out) {
     leafCount = 0;
-    Node *node = nullptr;
+    size_t pixelCount = in.size();
     for (int i = 0; i < pixelCount; ++i) {
-        auto color = pixels[i];
-        if (!addColor(node, color.r, color.g, color.b, 0)) {
+        auto color = in[i];
+        if (!addColor(&octree, color.r, color.g, color.b, 0)) {
             return 0;
         }
         while (leafCount > maxColorCount) {
             reduceTree();
         }
     }
-    octree = node;
-    getColorPalette(node, resultSize, out);
+    getColorPalette(octree, resultSize, out);
     return resultSize;
 }
 
-void
-OctreeQuantizer::getColorIndices(RGB pixels[], uint8_t *out, uint32_t size,
-                                 int (*getOffset)(int, int)) {
+void OctreeQuantizer::getColorIndices(const std::vector<ARGB> &pixels, uint8_t *out) {
+    size_t size = pixels.size();
     int lastR = 256;
     int lastG = 256;
     int lastB = 256;
@@ -181,12 +175,6 @@ OctreeQuantizer::getColorIndices(RGB pixels[], uint8_t *out, uint32_t size,
         uint8_t r = color.r;
         uint8_t g = color.g;
         uint8_t b = color.b;
-//        if (getOffset) {
-//            int offset = getOffset(j, color);
-//            r = (std::min(255, std::max(0, r + offset)));
-//            g = (std::min(255, std::max(0, g + offset)));
-//            b = (std::min(255, std::max(0, b + offset)));
-//        }
         if (!(lastR == r && lastG == g && lastB == b)) {
             lastR = r;
             lastG = g;

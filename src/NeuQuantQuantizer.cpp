@@ -7,12 +7,21 @@
 
 using namespace blk;
 
-int32_t
-NeuQuantQuantizer::quantize(RGB *pixels, uint32_t pixelCount, uint32_t maxColorCount, RGB out[]) {
+int32_t NeuQuantQuantizer::quantize(const std::vector<ARGB> &in, uint32_t maxColorCount, std::vector<ARGB> &out) {
     NeuQuant neuQuant;
-    neuQuant.initnet(reinterpret_cast<uint8_t *>(pixels), pixelCount * 3, sample);
+    size_t size = in.size();
+    auto pixels = new uint8_t[size * 3];
+    int index = 0;
+    for (int i = 0; i < size; ++i) {
+        auto inColor = in[i];
+        pixels[index++] = inColor.r;
+        pixels[index++] = inColor.g;
+        pixels[index++] = inColor.b;
+    }
+    neuQuant.initnet(pixels, size * 3, sample);
     neuQuant.learn();
     neuQuant.unbiasnet();
-    resultSize = neuQuant.getColourMap(out);
+    resultSize = neuQuant.getColourMap(out, maxColorCount);
+    delete[] pixels;
     return resultSize;
 }
