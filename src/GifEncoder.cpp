@@ -125,9 +125,6 @@ std::vector<uint8_t> GifEncoder::addImage(const std::vector<uint32_t> &original,
     bool ignoreTranslucency = (((transparencyOption >> 8) & 0xff) == 1);
     bool hasTransparentColor = false;
     uint8_t a = 255;
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
     for (uint32_t i = 0; i < size; i++) {
         auto color = original[i];
         if (enableTransparentColor) {
@@ -138,9 +135,9 @@ std::vector<uint8_t> GifEncoder::addImage(const std::vector<uint32_t> &original,
                 }
             }
         }
-        b = static_cast<uint8_t>((color >> 16) & 0xff);
-        g = static_cast<uint8_t>((color >> 8) & 0xff);
-        r = static_cast<uint8_t>(color & 0xff);
+        auto b = static_cast<uint8_t>((color >> 16) & 0xff);
+        auto g = static_cast<uint8_t>((color >> 8) & 0xff);
+        auto r = static_cast<uint8_t>(color & 0xff);
         if (a == 255 || (!ignoreTranslucency && a != 0)) {
             quantizeIn.emplace_back(a, r, g, b, i);
         }
@@ -150,8 +147,7 @@ std::vector<uint8_t> GifEncoder::addImage(const std::vector<uint32_t> &original,
     quantizeOut.reserve(256);
     int quantizeSize = 0;
     if (size > 256) {
-        quantizeSize = colorQuantizer->quantize(quantizeIn, hasTransparentColor ? 255 : 256,
-                                                quantizeOut);
+        quantizeSize = colorQuantizer->quantize(quantizeIn, hasTransparentColor ? 255 : 256, quantizeOut);
     } else {
         quantizeSize = size;
         quantizeOut.assign(quantizeIn.begin(), quantizeIn.end());

@@ -60,8 +60,6 @@ OctreeQuantizer::Node *OctreeQuantizer::createNode(int inLevel) {
 }
 
 bool OctreeQuantizer::addColor(Node **node, uint32_t r, uint32_t g, uint32_t b, int level) {
-    int index, shift;
-
     if (*node == nullptr) {
         *node = createNode(level);
     }
@@ -75,10 +73,10 @@ bool OctreeQuantizer::addColor(Node **node, uint32_t r, uint32_t g, uint32_t b, 
         (*node)->gSum += g;
         (*node)->bSum += b;
     } else {
-        shift = 7 - level;
-        index = (((r & mask[level]) >> shift) << 2)
-                | (((g & mask[level]) >> shift) << 1)
-                | ((b & mask[level]) >> shift);
+        int shift = 7 - level;
+        int index = (((r & mask[level]) >> shift) << 2)
+                    | (((g & mask[level]) >> shift) << 1)
+                    | ((b & mask[level]) >> shift);
         if (!addColor(&((*node)->child[index]), r, g, b, level + 1)) {
             return false;
         }

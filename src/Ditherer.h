@@ -25,9 +25,9 @@ namespace blk {
         // only for bayer
         int bayerScale = 1;
 
-        uint16_t width;
+        uint16_t width = 0;
 
-        uint16_t height;
+        uint16_t height = 0;
 
         virtual ~Ditherer() = default;
 

@@ -63,7 +63,7 @@ void addImage(const char *fileName, uint32_t width, uint32_t height, uint32_t de
     std::vector<std::vector<uint32_t >> images;
     images.emplace_back(image);
     images.emplace_back(image);
-     burstLinker.connect(images, delay, quantizerType, ditherType, transparencyOption, 0, 0);
+    burstLinker.connect(images, delay, quantizerType, ditherType, transparencyOption, 0, 0);
 }
 
 void

@@ -206,7 +206,7 @@ public class BurstLinker {
         if (mNative == 0) {
             return;
         }
-//        jniRelease(mNative);
+        jniRelease(mNative);
         mNative = 0;
     }
 }
