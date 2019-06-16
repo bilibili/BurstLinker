@@ -18,9 +18,9 @@ implementation 'com.bilibili:burst-linker:latest-version'
 
 #### Build Environment
 
-Android Studio 3.2.1
+Android Studio 3.4.1
 
-NDK r18
+NDK r20
 
 #### Basic usage
 
@@ -50,12 +50,12 @@ try {
 
 #### Enable RenderScript Support
 
-> This is an untested experimental feature
+> This is an untested feature.
 
-1. Git branch `/feature/render-script`
-2. Gradle sync, It will generate the required ScriptC_*.cpp
-3. Uncomment the line 64 of the /lib/CMakeLists.txt
-4. Run
+1. Choose the Git branch "/feature/render-script".
+2. Sync Project with Gradle Files, It will generate the required file named "ScriptC_*.cpp".
+3. Uncomment the line 64 of the "/lib/CMakeLists.txt".
+4. Try this function.
 
 ### Linux & Mac
 
@@ -71,7 +71,7 @@ try {
 
 3. Run
    - `./BurstLinker 1000 1.jpg 2.jpg 3.jpg` 
-   - See out.gif
+   - See the "out.gif"
 
 ### Windows
 
@@ -81,13 +81,13 @@ try {
    - `cd /BurstLinker`
    - `mkdir cmake-build-debug; cd cmake-build-debug`
    - `cmake ..`
-   - Open BurstLinker.sln
+   - Open the "BurstLinker.sln"
    - Solution Explorer -> BurstLinker -> Build
 
 3. Run
    - `cd Debug`
    - `BurstLinker.exe 1000 1.jpg 2.jpg 3.jpg` 
-   - See out.gif
+   - See the "out.gif"
 
 ## Samples
 
@@ -137,17 +137,21 @@ try {
 
 ![octree-floyd-steinberg](screenshot/octree-floyd-steinberg.gif)
 
-### Encoding with transparent image
+### Encodes images with transparent channels
 
 - Original
 
 ![bilibili](screenshot/bilibili.png)
 
-- Octree + No + Default (ARGB.a != 0)
+- Octree + No + Default
+
+  Display all Alpha channels greater than 0. (ARGB.a != 0)
 
 ![bilibili-octree](screenshot/bilibili-octree-default.gif)
 
-- Octree + No + Ignore translucency (ARGB.a == 255)
+- Octree + No + Ignored translucency 
+
+  Display only  the Alpha channels equal to 255. (ARGB.a == 255) 
 
 ![bilibili-octree](screenshot/bilibili-octree-ignore.gif)
 

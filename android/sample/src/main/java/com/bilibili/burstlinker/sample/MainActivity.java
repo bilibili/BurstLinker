@@ -25,7 +25,7 @@ import static com.bilibili.burstlinker.BurstLinker.CPU_COUNT;
  * Created by succlz123 on 2017/9/7.
  */
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "gif";
+    private static final String TAG = "JAVA_BURSTLINKER";
 
     private ImageView mDisplayImg;
     private TextView mTimeTv;
@@ -57,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
         final Context context = MainActivity.this;
 
         final Bitmap bitmap = loadBitmap(R.drawable.tcr);
-        int size = 0;
+        int count = 0;
         int width = bitmap.getWidth();
         int height = bitmap.getHeight();
         final int delayMs = 1000;
@@ -67,12 +67,13 @@ public class MainActivity extends AppCompatActivity {
         try {
             burstLinker.init(width, height, mFilePath, 0, CPU_COUNT);
             burstLinker.debugLog(true);
+            // select one to test
             if (true) {
                 List<Bitmap> bitmaps = new ArrayList<>();
                 bitmaps.add(bitmap);
                 bitmaps.add(bitmap);
                 bitmaps.add(bitmap);
-                size = bitmaps.size();
+                count = bitmaps.size();
                 burstLinker.connect(bitmaps, BurstLinker.OCTREE_QUANTIZER,
                         BurstLinker.NO_DITHER, 0, 0, delayMs);
             } else {
@@ -83,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
                 for (int color : colors) {
                     p.setColor(color);
                     canvas.drawRect(0, 0, width, height, p);
-                    size++;
+                    count++;
                     burstLinker.connect(colorBitmap, BurstLinker.OCTREE_QUANTIZER,
                             BurstLinker.NO_DITHER, 0, 0, delayMs);
                 }
@@ -105,7 +106,8 @@ public class MainActivity extends AppCompatActivity {
                 file.delete();
             }
         } else {
-            mText = "width " + width + " height " + height + " size " + size + " time " + diff + "ms";
+            mText =
+                    "width: " + width + " height: " + height + " count: " + count + " time: " + diff + "ms";
             runOnUiThread(() -> Glide.with(context).load(mFilePath).into(mDisplayImg));
         }
         runOnUiThread(() -> {

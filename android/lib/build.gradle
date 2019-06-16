@@ -21,7 +21,6 @@ android {
 
         externalNativeBuild {
             cmake {
-//                abiFilters 'armeabi-v7a', 'x86'
 //                arguments "-DANDROID_ARM_NEON=TRUE"
 //                arguments "-DANDROID_ABI=armeabi-v7a with NEON"
                 arguments "-DANDROID_STL=c++_static"

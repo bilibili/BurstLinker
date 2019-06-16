@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
             return 0;
         }
         if (processWidth != width || processHeight != height) {
-            std::cout << "Image is not the same width or height " << processFileName << std::endl;
+            std::cout << "The height and width of the front and back images do not match " << processFileName << std::endl;
             stbi_image_free(processImage);
             return 0;
         }
@@ -133,10 +133,10 @@ int main(int argc, char *argv[]) {
                     g = processImage[index++];
                     b = processImage[index++];
                 } else if (n == 4) {
-                    r = data[index++];
-                    g = data[index++];
-                    b = data[index++];
-                    a = data[index++];
+                    r = processImage[index++];
+                    g = processImage[index++];
+                    b = processImage[index++];
+                    a = processImage[index++];
                 } else {
                     std::cout << "Unsupported images" << std::endl;
                     return 0;
