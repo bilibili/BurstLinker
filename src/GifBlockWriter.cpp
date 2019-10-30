@@ -73,7 +73,7 @@ void GifBlockWriter::writeGraphicsControlExtensionBlock(std::vector<uint8_t> &co
     content.push_back(GRAPHICS_CONTROL_EXTENSION_BLOCK_SIZE);
 
     auto packed = static_cast<uint8_t>(
-            disposalMethod << 3
+            disposalMethod << 2
             | (userInput ? USER_INPUT_FLAG : 0)
             | (transparentColor ? TRANSPARENT_COLOR_FLAG : 0)
     );

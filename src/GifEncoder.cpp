@@ -76,7 +76,7 @@ bool GifEncoder::init(const char *path, uint16_t width, uint16_t height, uint32_
     if (threadCount > 8) {
         threadCount = 8;
     }
-    if (threadCount > 1) {
+    if (threadCount >= 1) {
         threadPool = std::make_unique<ThreadPool>(threadCount);
     }
     Logger::log(debugLog, "Image size is " + Logger::toString(width * height));
@@ -200,7 +200,7 @@ std::vector<uint8_t> GifEncoder::addImage(const std::vector<uint32_t> &original,
     //    int32_t paddedColorCount = GifBlockWriter::paddedSize(quantizeSize);
     int32_t paddedColorCount = 256;
     auto transparentColorIndex = static_cast<int32_t>(quantizeSize + 1);
-    GifBlockWriter::writeGraphicsControlExtensionBlock(content, 0, false, hasTransparentColor,
+    GifBlockWriter::writeGraphicsControlExtensionBlock(content, 2, false, hasTransparentColor,
                                                        delay / 10,
                                                        hasTransparentColor ? transparentColorIndex
                                                                            : 0);
