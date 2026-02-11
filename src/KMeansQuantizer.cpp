@@ -18,7 +18,7 @@ int32_t KMeansQuantizer::quantize(const std::vector<ARGB> &in, uint32_t maxColor
     }
     // random initial center
     std::mt19937 generator((uint32_t) time(nullptr));
-    std::uniform_int_distribution<uint32_t> dis(0, pixelCount);
+    std::uniform_int_distribution<uint32_t> dis(0, pixelCount - 1);
     std::set<ARGB> centroidsToRecompute;
     uint32_t randomCount = 0;
     while (centroidsToRecompute.size() < maxColorCount) {
